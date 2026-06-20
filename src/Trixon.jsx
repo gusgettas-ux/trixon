@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useMemo } from "react";
+import { useSharedState } from "./supabase.js";
 
 /* =====================================================================
    TRIXON — Home Bar Manager
    A single-file React app. Speakeasy / high-end hotel aesthetic.
    - Admin: Inventory, Recipes, Queue, Share Menu (QR)
    - Guest: Elegant menu (name + description only), request a drink
-   - Persistence: localStorage (drop-in swappable for Supabase later)
+   - Persistence: Supabase (shared across all devices, realtime sync)
    ===================================================================== */
 
 /* ----------------------------- Theme ------------------------------ */
@@ -27,24 +28,6 @@ const T = {
 
 const FONTS_HREF =
   "https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Space+Mono:wght@400;700&display=swap";
-
-/* ------------------------ localStorage hook ----------------------- */
-function useStored(key, initial) {
-  const [val, setVal] = useState(() => {
-    try {
-      const raw = localStorage.getItem(key);
-      return raw ? JSON.parse(raw) : initial;
-    } catch {
-      return initial;
-    }
-  });
-  useEffect(() => {
-    try {
-      localStorage.setItem(key, JSON.stringify(val));
-    } catch {}
-  }, [key, val]);
-  return [val, setVal];
-}
 
 /* ----------------------- Inventory categories --------------------- */
 /* Grouped options for the full-bar dropdown. */
@@ -1604,10 +1587,10 @@ function AdminView({ state, setters, guestUrl, onPreviewGuest }) {
 
 /* ============================== App =============================== */
 export default function App() {
-  const [bottles, setBottles] = useStored("trixon_bottles", SEED_BOTTLES);
-  const [recipes, setRecipes] = useStored("trixon_recipes", SEED_RECIPES);
-  const [queue, setQueue] = useStored("trixon_queue", []);
-  const [barName] = useStored("trixon_name", "Trixon");
+  const [bottles, setBottles] = useSharedState("bottles", SEED_BOTTLES);
+  const [recipes, setRecipes] = useSharedState("recipes", SEED_RECIPES);
+  const [queue, setQueue] = useSharedState("queue", []);
+  const barName = "Trixon";
 
   // Determine view from URL hash (so QR can point to #guest)
   const [view, setView] = useState(() =>
