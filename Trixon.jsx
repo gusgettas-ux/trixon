@@ -1361,30 +1361,44 @@ function MakeableDrinks({ recipes, bottles }) {
     setAiLoading(true);
     setAiError("");
     setAiResults(null);
-    const inventory = inStock.map((b) => `${b.name}${b.category ? ` (${b.category})` : ""}`);
+    const list = inStock.map((b) => `${b.name}${b.category ? ` (${b.category})` : ""}`).join(", ");
+    const prompt = `I have these items in my home bar: ${list}.
+
+Suggest 6 cocktails I could make with these (and common basics like ice, citrus, sugar, water). 
+Only suggest drinks where I plausibly have the main spirits/mixers. 
+Respond ONLY with a JSON array, no other text, in this exact format:
+[{"name":"Drink Name","tagline":"short enticing one-line description","ingredients":["1.5 oz X","0.75 oz Y"],"build":"one or two sentences on how to make it"}]`;
 
     try {
-      const res = await fetch("/api/suggest", {
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ inventory }),
+        body: JSON.stringify({
+          model: "claude-sonnet-4-6",
+          max_tokens: 1500,
+          messages: [{ role: "user", content: prompt }],
+        }),
       });
       if (!res.ok) {
-        let msg = `Request failed (status ${res.status}).`;
-        try {
-          const j = await res.json();
-          if (j && j.error) msg = j.error;
-        } catch {}
-        if (res.status === 500 && msg.includes("missing")) {
-          msg = "AI isn't set up yet — add your Anthropic API key in Vercel to enable suggestions.";
+        if (res.status === 401 || res.status === 403) {
+          throw new Error("AI key missing or invalid. Add your Anthropic API key to enable suggestions.");
         }
-        throw new Error(msg);
+        throw new Error(`AI request failed (status ${res.status}).`);
       }
       const data = await res.json();
-      const parsed = data.suggestions;
-      if (!parsed || !Array.isArray(parsed) || parsed.length === 0) {
-        throw new Error("Couldn't read the AI's suggestions. Try again.");
+      const text = (data.content || [])
+        .map((c) => (c.type === "text" ? c.text : ""))
+        .join("")
+        .replace(/```json|```/g, "")
+        .trim();
+      let parsed;
+      try {
+        parsed = JSON.parse(text);
+      } catch {
+        const m = text.match(/\[[\s\S]*\]/);
+        parsed = m ? JSON.parse(m[0]) : null;
       }
+      if (!parsed || !Array.isArray(parsed)) throw new Error("Could not read the AI's suggestions. Try again.");
       setAiResults(parsed);
     } catch (e) {
       setAiError(e.message || "Something went wrong reaching the AI.");
