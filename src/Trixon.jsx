@@ -62,43 +62,245 @@ const FONTS_HREF =
 /* Grouped options for the full-bar dropdown. */
 const CATEGORY_GROUPS = [
   {
-    group: "Spirits",
-    items: ["Whiskey / Bourbon", "Scotch", "Vodka", "Gin", "Rum", "Tequila / Mezcal", "Brandy / Cognac"],
+    group: "Whiskey",
+    items: [
+      "Bourbon",
+      "Rye Whiskey",
+      "Tennessee Whiskey",
+      "Scotch (Blended)",
+      "Scotch (Single Malt)",
+      "Irish Whiskey",
+      "Japanese Whisky",
+      "Canadian Whisky",
+      "Other Whiskey",
+    ],
+  },
+  {
+    group: "Agave Spirits",
+    items: ["Tequila Blanco", "Tequila Reposado", "Tequila Añejo", "Mezcal", "Other Agave"],
+  },
+  {
+    group: "Rum",
+    items: [
+      "White / Silver Rum",
+      "Gold Rum",
+      "Dark / Black Rum",
+      "Spiced Rum",
+      "Aged / Añejo Rum",
+      "Rhum Agricole",
+      "Cachaça",
+      "Overproof Rum",
+    ],
+  },
+  {
+    group: "Gin",
+    items: ["London Dry Gin", "Old Tom Gin", "Plymouth Gin", "Navy Strength Gin", "Genever", "Flavored Gin"],
+  },
+  {
+    group: "Vodka",
+    items: ["Vodka (Plain)", "Citrus Vodka", "Flavored Vodka", "Potato Vodka"],
+  },
+  {
+    group: "Brandy",
+    items: ["Cognac", "Armagnac", "Brandy", "Calvados / Apple Brandy", "Pisco", "Grappa", "Eau de Vie"],
+  },
+  {
+    group: "Other Spirits",
+    items: ["Absinthe", "Aquavit", "Soju", "Baijiu", "Everclear / Neutral", "Other Spirit"],
   },
   {
     group: "Liqueurs & Cordials",
     items: [
-      "Amaro / Bitter",
-      "Triple Sec / Orange",
+      "Triple Sec / Curaçao",
+      "Cointreau",
+      "Grand Marnier",
+      "Maraschino",
+      "Amaretto",
       "Coffee Liqueur",
-      "Cream Liqueur",
+      "Cream / Irish Cream",
       "Elderflower",
+      "Crème de Cassis",
+      "Crème de Violette",
+      "Crème de Menthe",
+      "Crème de Cacao",
+      "Peach / Apricot",
+      "Melon",
+      "Sloe Gin",
+      "Falernum",
+      "Allspice Dram",
+      "Chartreuse (Green)",
+      "Chartreuse (Yellow)",
+      "Bénédictine",
+      "Drambuie",
+      "Sambuca",
+      "Limoncello",
+      "Pimm's",
       "Other Liqueur",
     ],
   },
   {
+    group: "Amari & Aperitifs",
+    items: [
+      "Campari",
+      "Aperol",
+      "Fernet",
+      "Averna",
+      "Montenegro",
+      "Cynar",
+      "Nonino",
+      "Suze / Gentian",
+      "Other Amaro",
+    ],
+  },
+  {
     group: "Fortified & Wine",
-    items: ["Vermouth", "Sherry", "Port", "Aperitif", "Wine", "Champagne / Sparkling"],
+    items: [
+      "Sweet Vermouth",
+      "Dry Vermouth",
+      "Blanc / Bianco Vermouth",
+      "Lillet",
+      "Cocchi Americano",
+      "Sherry (Fino)",
+      "Sherry (Oloroso)",
+      "Sherry (Other)",
+      "Port",
+      "Madeira",
+      "Marsala",
+      "Red Wine",
+      "White Wine",
+      "Rosé",
+      "Champagne / Sparkling",
+      "Prosecco / Cava",
+    ],
   },
   {
     group: "Beer & Cider",
-    items: ["Beer", "Cider", "Hard Seltzer"],
+    items: ["Lager", "Pilsner", "IPA / Pale Ale", "Stout / Porter", "Wheat Beer", "Sour / Saison", "Non-Alc Beer", "Cider", "Hard Seltzer"],
   },
   {
-    group: "Mixers",
-    items: ["Tonic Water", "Club Soda", "Cola", "Ginger Beer", "Ginger Ale", "Lemon-Lime Soda", "Juice", "Tea / Coffee"],
+    group: "Juices",
+    items: [
+      "Lime Juice",
+      "Lemon Juice",
+      "Orange Juice",
+      "Grapefruit Juice",
+      "Pineapple Juice",
+      "Cranberry Juice",
+      "Tomato Juice",
+      "Apple Juice",
+      "Pomegranate Juice",
+      "Passion Fruit",
+      "Other Juice",
+    ],
+  },
+  {
+    group: "Sodas & Carbonated",
+    items: [
+      "Club Soda / Seltzer",
+      "Tonic Water",
+      "Cola",
+      "Diet Cola",
+      "Lemon-Lime Soda",
+      "Ginger Beer",
+      "Ginger Ale",
+      "Grapefruit Soda",
+      "Sparkling Water",
+      "Energy Drink",
+      "Other Soda",
+    ],
+  },
+  {
+    group: "Non-Carbonated Mixers",
+    items: [
+      "Coconut Cream / Milk",
+      "Heavy Cream / Half & Half",
+      "Milk",
+      "Cold Brew / Coffee",
+      "Espresso",
+      "Hot Coffee",
+      "Tea",
+      "Iced Tea",
+      "Lemonade",
+      "Sour Mix",
+      "Bloody Mary Mix",
+      "Margarita Mix",
+      "Other Mixer",
+    ],
   },
   {
     group: "Syrups & Sweeteners",
-    items: ["Simple Syrup", "Grenadine", "Agave", "Honey Syrup", "Orgeat", "Flavored Syrup"],
+    items: [
+      "Simple Syrup",
+      "Rich / Demerara Syrup",
+      "Honey Syrup",
+      "Agave Nectar",
+      "Maple Syrup",
+      "Grenadine",
+      "Orgeat",
+      "Falernum Syrup",
+      "Cinnamon Syrup",
+      "Vanilla Syrup",
+      "Ginger Syrup",
+      "Raspberry / Berry Syrup",
+      "Passion Fruit Syrup",
+      "Flavored Syrup",
+      "Sugar Cubes",
+      "Superfine Sugar",
+    ],
   },
   {
-    group: "Bitters",
-    items: ["Aromatic Bitters", "Orange Bitters", "Other Bitters"],
+    group: "Bitters & Tinctures",
+    items: [
+      "Angostura / Aromatic",
+      "Orange Bitters",
+      "Peychaud's",
+      "Chocolate / Mole Bitters",
+      "Walnut Bitters",
+      "Celery Bitters",
+      "Grapefruit Bitters",
+      "Cardamom Bitters",
+      "Saline / Salt Tincture",
+      "Other Bitters",
+    ],
   },
   {
-    group: "Garnishes & Extras",
-    items: ["Citrus", "Olives", "Cherries", "Herbs", "Salt / Rim", "Other"],
+    group: "Garnishes",
+    items: [
+      "Limes",
+      "Lemons",
+      "Oranges",
+      "Grapefruit",
+      "Maraschino Cherries",
+      "Luxardo Cherries",
+      "Olives",
+      "Cocktail Onions",
+      "Fresh Mint",
+      "Fresh Basil",
+      "Rosemary",
+      "Cucumber",
+      "Jalapeño",
+      "Ginger (Fresh)",
+      "Edible Flowers",
+      "Citrus Peels / Twists",
+    ],
+  },
+  {
+    group: "Rims & Spices",
+    items: ["Salt", "Flavored / Smoked Salt", "Sugar (Rim)", "Tajín / Chili", "Cinnamon", "Nutmeg", "Black Pepper", "Other Spice"],
+  },
+  {
+    group: "Pantry & Extras",
+    items: [
+      "Egg (White / Whole)",
+      "Aquafaba",
+      "Hot Sauce",
+      "Worcestershire",
+      "Coconut Water",
+      "Coffee Beans",
+      "Whipped Cream",
+      "Ice (Specialty)",
+      "Other",
+    ],
   },
 ];
 /* Flat list of the top-level groups, used for filtering inventory. */
@@ -111,12 +313,12 @@ function parentGroup(category) {
 
 /* --------------------------- Seed data ---------------------------- */
 const SEED_BOTTLES = [
-  { id: "b1", name: "Bulleit Bourbon", category: "Whiskey / Bourbon", level: 75, order: false },
-  { id: "b2", name: "Hendrick's Gin", category: "Gin", level: 22, order: true },
-  { id: "b3", name: "Campari", category: "Amaro / Bitter", level: 60, order: false },
-  { id: "b4", name: "Sweet Vermouth", category: "Vermouth", level: 40, order: false },
-  { id: "b5", name: "Stella Artois", category: "Beer", level: 90, order: false },
-  { id: "b6", name: "Athletic Free Wave Hazy IPA", category: "Beer", level: 100, order: false },
+  { id: "b1", name: "Bulleit Bourbon", category: "Bourbon", level: 75, order: false },
+  { id: "b2", name: "Hendrick's Gin", category: "London Dry Gin", level: 22, order: true },
+  { id: "b3", name: "Campari", category: "Campari", level: 60, order: false },
+  { id: "b4", name: "Sweet Vermouth", category: "Sweet Vermouth", level: 40, order: false },
+  { id: "b5", name: "Stella Artois", category: "Lager", level: 90, order: false },
+  { id: "b6", name: "Athletic Free Wave Hazy IPA", category: "IPA / Pale Ale", level: 100, order: false },
 ];
 
 const SEED_RECIPES = [
@@ -796,18 +998,27 @@ function Recipes({ recipes, setRecipes }) {
     tag: "",
     group: "",
     description: "",
+    glass: "",
+    method: "",
     ingredients: [{ name: "", amount: "" }],
     notes: "",
+    tastingNotes: "",
+    rating: 0,
+    featured: false,
     available: true,
   };
   const [draft, setDraft] = useState(blank);
+  const [search, setSearch] = useState("");
+  const [scaleFor, setScaleFor] = useState({}); // recipeId -> multiplier for batch view
 
   const startNew = () => {
     setDraft({ ...blank, id: "r" + Date.now() });
     setEditing("new");
   };
   const startEdit = (r) => {
-    setDraft(JSON.parse(JSON.stringify({ group: "", ...r })));
+    setDraft(JSON.parse(JSON.stringify({
+      group: "", glass: "", method: "", tastingNotes: "", rating: 0, featured: false, ...r,
+    })));
     setEditing(r.id);
   };
   const save = () => {
@@ -833,6 +1044,29 @@ function Recipes({ recipes, setRecipes }) {
 
   // Existing group names for the datalist suggestions
   const existingGroups = [...new Set(recipes.map((r) => r.group).filter(Boolean))];
+
+  // Scale an amount string like "1.5 oz" or "¾ oz" by a multiplier
+  const scaleAmount = (amount, mult) => {
+    if (!amount || mult === 1) return amount;
+    const frac = { "½": 0.5, "¼": 0.25, "¾": 0.75, "⅓": 1 / 3, "⅔": 2 / 3, "⅛": 0.125 };
+    let s = String(amount);
+    // Replace unicode fractions with decimals for parsing
+    let normalized = s;
+    Object.keys(frac).forEach((f) => { normalized = normalized.replace(f, frac[f]); });
+    const m = normalized.match(/(\d*\.?\d+(?:\s*\/\s*\d+)?)/);
+    if (!m) return amount; // nothing numeric (e.g. "2 dashes" still scales below)
+    let num = m[1];
+    if (num.includes("/")) {
+      const [a, b] = num.split("/").map((x) => parseFloat(x));
+      num = a / b;
+    } else {
+      num = parseFloat(num);
+    }
+    const scaled = num * mult;
+    // Round nicely
+    const rounded = Math.round(scaled * 100) / 100;
+    return s.replace(/(\d*\.?\d+(?:\s*\/\s*\d+)?|[½¼¾⅓⅔⅛])/, String(rounded));
+  };
 
   const setIng = (i, patch) =>
     setDraft((d) => ({
@@ -890,6 +1124,46 @@ function Recipes({ recipes, setRecipes }) {
             multiline
           />
 
+          {/* Glassware & method */}
+          <div style={{ display: "flex", gap: 10 }}>
+            <div style={{ flex: 1 }}>
+              <FieldLabel>Glass</FieldLabel>
+              <select
+                value={draft.glass}
+                onChange={(e) => setDraft({ ...draft, glass: e.target.value })}
+                style={{
+                  width: "100%", background: "#15110b", border: `1px solid ${T.border}`,
+                  color: T.cream, fontFamily: "'Cormorant Garamond', serif", fontSize: 16,
+                  padding: "9px 10px", outline: "none", boxSizing: "border-box", appearance: "none",
+                  cursor: "pointer", marginBottom: 14,
+                }}
+              >
+                <option value="">—</option>
+                {["Rocks / Old Fashioned", "Highball / Collins", "Coupe", "Martini / Cocktail", "Wine", "Flute", "Nick & Nora", "Copper Mug", "Hurricane", "Tiki / Mug", "Shot", "Pint"].map((g) => (
+                  <option key={g} value={g} style={{ background: T.bg2 }}>{g}</option>
+                ))}
+              </select>
+            </div>
+            <div style={{ flex: 1 }}>
+              <FieldLabel>Method</FieldLabel>
+              <select
+                value={draft.method}
+                onChange={(e) => setDraft({ ...draft, method: e.target.value })}
+                style={{
+                  width: "100%", background: "#15110b", border: `1px solid ${T.border}`,
+                  color: T.cream, fontFamily: "'Cormorant Garamond', serif", fontSize: 16,
+                  padding: "9px 10px", outline: "none", boxSizing: "border-box", appearance: "none",
+                  cursor: "pointer", marginBottom: 14,
+                }}
+              >
+                <option value="">—</option>
+                {["Shaken", "Stirred", "Built in glass", "Blended", "Muddled", "Rolled", "Thrown", "Frozen / Slushi"].map((m) => (
+                  <option key={m} value={m} style={{ background: T.bg2 }}>{m}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
           <FieldLabel>Ingredients & Measurements</FieldLabel>
           {draft.ingredients.map((ing, i) => (
             <div key={i} style={{ display: "flex", gap: 8, marginBottom: 8 }}>
@@ -939,6 +1213,64 @@ function Recipes({ recipes, setRecipes }) {
             multiline
           />
 
+          <Field
+            label="Tasting Notes (admin only)"
+            value={draft.tastingNotes}
+            onChange={(v) => setDraft({ ...draft, tastingNotes: v })}
+            placeholder="How did it turn out? Tweaks for next time…"
+            multiline
+          />
+
+          {/* Star rating */}
+          <div style={{ marginBottom: 16 }}>
+            <FieldLabel>Your Rating</FieldLabel>
+            <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+              {[1, 2, 3, 4, 5].map((n) => (
+                <button
+                  key={n}
+                  onClick={() => setDraft({ ...draft, rating: draft.rating === n ? 0 : n })}
+                  style={{
+                    background: "transparent",
+                    border: "none",
+                    cursor: "pointer",
+                    fontSize: 24,
+                    color: n <= draft.rating ? T.goldBright : T.border,
+                    padding: 0,
+                    lineHeight: 1,
+                  }}
+                >
+                  ★
+                </button>
+              ))}
+              {draft.rating > 0 && (
+                <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 11, color: T.goldDim, marginLeft: 6 }}>
+                  {draft.rating}/5
+                </span>
+              )}
+            </div>
+          </div>
+
+          <label
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              color: T.text,
+              fontFamily: "'Cormorant Garamond', serif",
+              fontSize: 16,
+              marginBottom: 12,
+              cursor: "pointer",
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={draft.featured}
+              onChange={(e) => setDraft({ ...draft, featured: e.target.checked })}
+              style={{ accentColor: T.gold, width: 16, height: 16 }}
+            />
+            ⭐ Feature this on the guest menu (pinned to top)
+          </label>
+
           <label
             style={{
               display: "flex",
@@ -974,6 +1306,28 @@ function Recipes({ recipes, setRecipes }) {
   return (
     <div>
       <SectionLabel>Recipes</SectionLabel>
+
+      {/* Search */}
+      <div style={{ marginBottom: 14 }}>
+        <input
+          value={search}
+          placeholder="Search recipes…"
+          onChange={(e) => setSearch(e.target.value)}
+          style={{
+            width: "100%",
+            background: "#15110b",
+            border: `1px solid ${T.borderHi}`,
+            color: T.cream,
+            fontFamily: "'Cormorant Garamond', serif",
+            fontSize: 17,
+            padding: "10px 14px",
+            outline: "none",
+            boxSizing: "border-box",
+            borderRadius: 6,
+          }}
+        />
+      </div>
+
       <div
         style={{
           fontFamily: "'Cormorant Garamond', serif",
@@ -988,18 +1342,36 @@ function Recipes({ recipes, setRecipes }) {
       </div>
 
       {(() => {
+        // Filter by search first
+        const sq = search.trim().toLowerCase();
+        const pool = !sq
+          ? recipes
+          : recipes.filter(
+              (r) =>
+                r.name.toLowerCase().includes(sq) ||
+                (r.group || "").toLowerCase().includes(sq) ||
+                (r.tag || "").toLowerCase().includes(sq) ||
+                (r.ingredients || []).some((i) => (i.name || "").toLowerCase().includes(sq))
+            );
         // Build ordered group sections preserving master list order.
         const order = [];
         const seen = new Set();
-        recipes.forEach((r) => {
+        pool.forEach((r) => {
           const g = r.group || "More Cocktails";
           if (!seen.has(g)) {
             seen.add(g);
             order.push(g);
           }
         });
+        if (pool.length === 0) {
+          return (
+            <div style={{ textAlign: "center", padding: "32px 20px", color: T.goldDim, fontFamily: "'Cormorant Garamond', serif", fontStyle: "italic", fontSize: 17 }}>
+              No recipes match "{search}".
+            </div>
+          );
+        }
         return order.map((g) => {
-          const inGroup = recipes.filter((r) => (r.group || "More Cocktails") === g);
+          const inGroup = pool.filter((r) => (r.group || "More Cocktails") === g);
           return (
             <div key={g} style={{ marginBottom: 28 }}>
               <div
@@ -1089,10 +1461,64 @@ function Recipes({ recipes, setRecipes }) {
                         fontSize: 16,
                         color: T.text,
                         lineHeight: 1.5,
-                        marginBottom: 14,
+                        marginBottom: 10,
                       }}
                     >
                       {r.description}
+                    </div>
+
+                    {/* Glass · Method · Rating · Featured badges */}
+                    {(r.glass || r.method || r.rating > 0 || r.featured) && (
+                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", marginBottom: 12 }}>
+                        {r.featured && (
+                          <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 9, letterSpacing: 1, textTransform: "uppercase", color: T.goldBright, border: `1px solid ${T.goldDeep}`, borderRadius: 3, padding: "2px 7px" }}>
+                            ⭐ Featured
+                          </span>
+                        )}
+                        {r.glass && (
+                          <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 9, letterSpacing: 1, textTransform: "uppercase", color: T.goldDim }}>
+                            🥃 {r.glass}
+                          </span>
+                        )}
+                        {r.method && (
+                          <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 9, letterSpacing: 1, textTransform: "uppercase", color: T.goldDim }}>
+                            · {r.method}
+                          </span>
+                        )}
+                        {r.rating > 0 && (
+                          <span style={{ fontSize: 12, color: T.goldBright, letterSpacing: 1 }}>
+                            {"★".repeat(r.rating)}<span style={{ color: T.border }}>{"★".repeat(5 - r.rating)}</span>
+                          </span>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Batch scaling control */}
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                      <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 9, letterSpacing: 1, textTransform: "uppercase", color: T.goldDim }}>
+                        Batch:
+                      </span>
+                      {[1, 2, 4, 6, 12].map((mult) => {
+                        const active = (scaleFor[r.id] || 1) === mult;
+                        return (
+                          <button
+                            key={mult}
+                            onClick={() => setScaleFor((s) => ({ ...s, [r.id]: mult }))}
+                            style={{
+                              background: active ? `${T.goldDeep}22` : "transparent",
+                              border: `1px solid ${active ? T.goldDeep : T.border}`,
+                              color: active ? T.goldBright : T.goldDim,
+                              fontFamily: "'Space Mono', monospace",
+                              fontSize: 10,
+                              padding: "3px 8px",
+                              borderRadius: 4,
+                              cursor: "pointer",
+                            }}
+                          >
+                            ×{mult}
+                          </button>
+                        );
+                      })}
                     </div>
 
                     {r.ingredients.map((ing, i) => (
@@ -1110,7 +1536,7 @@ function Recipes({ recipes, setRecipes }) {
                       >
                         {ing.name}
                         <span style={{ color: T.gold, fontFamily: "'Space Mono', monospace", fontSize: 12 }}>
-                          {ing.amount}
+                          {scaleAmount(ing.amount, scaleFor[r.id] || 1)}
                         </span>
                       </div>
                     ))}
@@ -1129,6 +1555,26 @@ function Recipes({ recipes, setRecipes }) {
                         }}
                       >
                         {r.notes}
+                      </div>
+                    )}
+
+                    {r.tastingNotes && (
+                      <div
+                        style={{
+                          marginTop: 8,
+                          padding: "10px 12px",
+                          background: "rgba(255,255,255,0.02)",
+                          borderLeft: `2px solid ${T.borderHi}`,
+                          fontFamily: "'Cormorant Garamond', serif",
+                          fontSize: 14,
+                          fontStyle: "italic",
+                          color: T.text,
+                        }}
+                      >
+                        <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 8, letterSpacing: 1, textTransform: "uppercase", color: T.goldDim, display: "block", marginBottom: 4 }}>
+                          Tasting Notes
+                        </span>
+                        {r.tastingNotes}
                       </div>
                     )}
 
@@ -1341,7 +1787,7 @@ function haveIngredient(ingredientName, inStock) {
   });
 }
 
-function MakeableDrinks({ recipes, bottles }) {
+function MakeableDrinks({ recipes, setRecipes, bottles }) {
   const inStock = bottles.filter((b) => (b.level ?? 0) > 0);
 
   // Evaluate each saved recipe
@@ -1356,8 +1802,38 @@ function MakeableDrinks({ recipes, bottles }) {
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState("");
   const [aiResults, setAiResults] = useState(null);
+  const [savedNames, setSavedNames] = useState([]); // names added to Recipes this session
+  const [focus, setFocus] = useState(""); // optional theme for guided AI suggestions
 
-  const askAI = async () => {
+  // Add an AI suggestion into the saved Recipes list
+  const saveToRecipes = (d) => {
+    const ingredients = (Array.isArray(d.ingredients) ? d.ingredients : []).map((line) => {
+      // Split a line like "1.5 oz Bourbon" into amount + name (best effort)
+      const m = String(line).match(/^([\d.\/\s]+(?:oz|ml|dash(?:es)?|tsp|tbsp|cup|part(?:s)?|splash|barspoon)?\.?)\s+(.*)$/i);
+      if (m) return { amount: m[1].trim(), name: m[2].trim() };
+      return { name: String(line).trim(), amount: "" };
+    });
+    const newRecipe = {
+      id: "r" + Date.now() + Math.floor(Math.random() * 1000),
+      name: d.name,
+      tag: "AI Suggestion",
+      group: "AI Suggestions",
+      description: d.tagline || "",
+      ingredients: ingredients.length ? ingredients : [{ name: "", amount: "" }],
+      notes: d.build || "",
+      available: false, // hidden from guest menu until you review/enable it
+    };
+    setRecipes((rs) => {
+      if (rs.some((r) => r.name.toLowerCase() === d.name.toLowerCase())) return rs; // avoid dupes
+      return [...rs, newRecipe];
+    });
+    setSavedNames((s) => (s.includes(d.name) ? s : [...s, d.name]));
+  };
+
+  const alreadyInRecipes = (name) =>
+    savedNames.includes(name) || recipes.some((r) => r.name.toLowerCase() === name.toLowerCase());
+
+  const askAI = async (focus = "") => {
     setAiLoading(true);
     setAiError("");
     setAiResults(null);
@@ -1367,7 +1843,7 @@ function MakeableDrinks({ recipes, bottles }) {
       const res = await fetch("/api/suggest", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ inventory }),
+        body: JSON.stringify({ inventory, focus }),
       });
       if (!res.ok) {
         let msg = `Request failed (status ${res.status}).`;
@@ -1478,9 +1954,50 @@ function MakeableDrinks({ recipes, bottles }) {
           Ask AI to suggest cocktails you could make from what's in stock right now.
         </div>
 
-        <GoldButton onClick={askAI} style={{ width: "100%", padding: 14 }}>
+        <GoldButton onClick={() => askAI("")} style={{ width: "100%", padding: 14 }}>
           {aiLoading ? "Thinking…" : "✨ Ask AI for Ideas"}
         </GoldButton>
+
+        {/* Guided suggestions with a custom focus/theme */}
+        <div
+          style={{
+            marginTop: 16,
+            paddingTop: 16,
+            borderTop: `1px dashed ${T.border}`,
+          }}
+        >
+          <FieldLabel>Or focus the ideas on a theme</FieldLabel>
+          <input
+            value={focus}
+            placeholder="e.g. summer drinks, dinner party, smoky & bold, low-ABV…"
+            onChange={(e) => setFocus(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && focus.trim() && !aiLoading) askAI(focus.trim());
+            }}
+            style={{
+              width: "100%",
+              background: "#15110b",
+              border: `1px solid ${T.borderHi}`,
+              color: T.cream,
+              fontFamily: "'Cormorant Garamond', serif",
+              fontSize: 16,
+              padding: "10px 14px",
+              outline: "none",
+              boxSizing: "border-box",
+              borderRadius: 6,
+              marginBottom: 10,
+            }}
+          />
+          <GoldButton
+            onClick={() => focus.trim() && askAI(focus.trim())}
+            style={{ width: "100%", padding: 14, opacity: focus.trim() ? 1 : 0.5 }}
+          >
+            {aiLoading ? "Thinking…" : "✨ Ask with Focus"}
+          </GoldButton>
+          <div style={{ fontFamily: "'Cormorant Garamond', serif", fontStyle: "italic", fontSize: 13, color: T.goldDim, marginTop: 8 }}>
+            Tell the AI a vibe, occasion, season, or flavor and it'll tailor the suggestions to your stock.
+          </div>
+        </div>
 
         {aiError && (
           <Card style={{ marginTop: 14, borderLeft: `2px solid ${T.danger}` }}>
@@ -1531,6 +2048,26 @@ function MakeableDrinks({ recipes, bottles }) {
                   {d.build}
                 </div>
               )}
+              <div style={{ marginTop: 14 }}>
+                {alreadyInRecipes(d.name) ? (
+                  <div
+                    style={{
+                      fontFamily: "'Space Mono', monospace",
+                      fontSize: 10,
+                      letterSpacing: 1,
+                      textTransform: "uppercase",
+                      color: T.goldDim,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 6,
+                    }}
+                  >
+                    ✓ Saved to Recipes
+                  </div>
+                ) : (
+                  <GoldButton onClick={() => saveToRecipes(d)}>+ Save to Recipes</GoldButton>
+                )}
+              </div>
             </Card>
           ))}
       </div>
@@ -1649,23 +2186,37 @@ function GuestView({ recipes, bottles = [], addToQueue, barName }) {
           </div>
         )}
 
-        {/* Menu — grouped with section headers, preserving admin order */}
+        {/* Menu — featured pinned first, then grouped with section headers */}
         {(() => {
+          const featured = menu.filter((r) => r.featured);
+          const rest = menu.filter((r) => !r.featured);
           const order2 = [];
           const seen = new Set();
-          menu.forEach((r) => {
+          rest.forEach((r) => {
             const g = r.group || "More Cocktails";
             if (!seen.has(g)) {
               seen.add(g);
               order2.push(g);
             }
           });
-          const single = order2.length <= 1;
-          return order2.map((g) => {
-            const inGroup = menu.filter((r) => (r.group || "More Cocktails") === g);
+          // Featured counts as a section for header purposes
+          const single = order2.length <= 1 && featured.length === 0;
+
+          const sections = [];
+          if (featured.length > 0) {
+            sections.push({ key: "__featured", label: "✨ Featured Tonight", items: featured, always: true });
+          }
+          order2.forEach((g) => {
+            sections.push({ key: g, label: g, items: rest.filter((r) => (r.group || "More Cocktails") === g) });
+          });
+
+          return sections.map((section) => {
+            const g = section.label;
+            const inGroup = section.items;
+            const showHeader = section.always || !single;
             return (
-              <div key={g}>
-                {!single && (
+              <div key={section.key}>
+                {showHeader && (
                   <div
                     style={{
                       fontFamily: "'Playfair Display', serif",
@@ -1949,7 +2500,7 @@ function AdminView({ state, setters, guestUrl, onPreviewGuest }) {
       <div style={{ maxWidth: 640, margin: "0 auto", padding: "24px" }}>
         {tab === "inventory" && <Inventory bottles={state.bottles} setBottles={setters.setBottles} />}
         {tab === "recipes" && <Recipes recipes={state.recipes} setRecipes={setters.setRecipes} />}
-        {tab === "make" && <MakeableDrinks recipes={state.recipes} bottles={state.bottles} />}
+        {tab === "make" && <MakeableDrinks recipes={state.recipes} setRecipes={setters.setRecipes} bottles={state.bottles} />}
         {tab === "queue" && <Queue queue={state.queue} setQueue={setters.setQueue} />}
         {tab === "share" && <ShareMenu guestUrl={guestUrl} />}
       </div>
