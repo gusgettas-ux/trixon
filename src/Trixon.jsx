@@ -824,7 +824,7 @@ function Inventory({ bottles, setBottles }) {
       {bottles.some((b) => b.order) && (
         <Card style={{ marginTop: 24, borderLeft: `2px solid ${T.gold}` }}>
           <SectionLabel>Shopping List</SectionLabel>
-          {CATEGORY_FILTER_ORDER.map((groupName) => {
+          {[...CATEGORY_FILTER_ORDER, "Other"].map((groupName) => {
             const items = bottles.filter((b) => b.order && parentGroup(b.category) === groupName);
             if (items.length === 0) return null;
             return (
@@ -1017,7 +1017,7 @@ function CategorySelect({ value, onChange }) {
 
 
 /* ============================= Recipes ============================ */
-function Recipes({ recipes, setRecipes }) {
+function Recipes({ recipes, setRecipes, tonight, setTonight }) {
   const [editing, setEditing] = useState(null); // recipe id or "new"
   const blank = {
     id: "",
@@ -1071,6 +1071,19 @@ function Recipes({ recipes, setRecipes }) {
 
   // Existing group names for the datalist suggestions
   const existingGroups = [...new Set(recipes.map((r) => r.group).filter(Boolean))];
+
+  // Hand-pick a saved recipe into Tonight's Menu
+  const inTonight = (name) => (tonight?.items || []).some((t) => t.name.toLowerCase() === name.toLowerCase());
+  const toggleTonight = (r) => {
+    setTonight((t) => {
+      const items = t?.items || [];
+      const exists = items.some((x) => x.name.toLowerCase() === r.name.toLowerCase());
+      const nextItems = exists
+        ? items.filter((x) => x.name.toLowerCase() !== r.name.toLowerCase())
+        : [...items, { name: r.name, tag: r.tag || "Tonight", description: r.description || "" }];
+      return { ...(t || {}), active: t?.active ?? true, mode: t?.mode || "pin", items: nextItems };
+    });
+  };
 
   // Scale an amount string like "1.5 oz" or "¾ oz" by a multiplier
   const scaleAmount = (amount, mult) => {
@@ -1605,9 +1618,16 @@ function Recipes({ recipes, setRecipes }) {
                       </div>
                     )}
 
-                    <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
+                    <div style={{ display: "flex", gap: 8, marginTop: 14, flexWrap: "wrap" }}>
                       <GoldButton subtle onClick={() => startEdit(r)}>
                         Edit
+                      </GoldButton>
+                      <GoldButton
+                        subtle={!inTonight(r.name)}
+                        onClick={() => toggleTonight(r)}
+                        style={inTonight(r.name) ? { borderColor: T.goldBright } : {}}
+                      >
+                        {inTonight(r.name) ? "✓ On Tonight" : "+ Tonight"}
                       </GoldButton>
                       <GoldButton subtle danger onClick={() => remove(r.id)}>
                         Delete
@@ -1732,7 +1752,7 @@ function Queue({ queue, setQueue }) {
 }
 
 /* =========================== Share Menu =========================== */
-function ShareMenu({ guestUrl, recipes = [], barName = "Trixon" }) {
+function ShareMenu({ guestUrl, recipes = [], tonight, barName = "Trixon" }) {
   const [copied, setCopied] = useState(false);
   const copy = () => {
     navigator.clipboard?.writeText(guestUrl);
@@ -1742,16 +1762,29 @@ function ShareMenu({ guestUrl, recipes = [], barName = "Trixon" }) {
 
   // Build a printable menu in a new window
   const printMenu = () => {
+    const tonightActive = tonight?.active && (tonight?.items || []).length > 0;
+    const tonightReplace = tonightActive && tonight.mode === "replace";
     const menu = recipes.filter((r) => r.available);
-    const featured = menu.filter((r) => r.featured);
-    const rest = menu.filter((r) => !r.featured);
     const groups = [];
-    if (featured.length) groups.push(["✨ Featured Tonight", featured]);
-    const seen = new Set();
-    rest.forEach((r) => {
-      const g = r.group || "Cocktails";
-      if (!seen.has(g)) { seen.add(g); groups.push([g, rest.filter((x) => (x.group || "Cocktails") === g)]); }
-    });
+
+    if (tonightActive) {
+      const titems = tonight.items.map((it) => {
+        const full = recipes.find((r) => r.name.toLowerCase() === it.name.toLowerCase());
+        return full || { name: it.name, tag: it.tag || "", description: it.description || "" };
+      });
+      groups.push(["✨ Tonight's Menu", titems]);
+    }
+
+    if (!tonightReplace) {
+      const featured = menu.filter((r) => r.featured);
+      const rest = menu.filter((r) => !r.featured);
+      if (featured.length) groups.push(["✨ Featured Tonight", featured]);
+      const seen = new Set();
+      rest.forEach((r) => {
+        const g = r.group || "Cocktails";
+        if (!seen.has(g)) { seen.add(g); groups.push([g, rest.filter((x) => (x.group || "Cocktails") === g)]); }
+      });
+    }
     const section = groups
       .map(
         ([title, items]) => `
@@ -1902,7 +1935,7 @@ function haveIngredient(ingredientName, inStock) {
   });
 }
 
-function MakeableDrinks({ recipes, setRecipes, bottles }) {
+function MakeableDrinks({ recipes, setRecipes, bottles, tonight, setTonight }) {
   const inStock = bottles.filter((b) => (b.level ?? 0) > 0);
 
   // Evaluate each saved recipe
@@ -1948,6 +1981,19 @@ function MakeableDrinks({ recipes, setRecipes, bottles }) {
   const alreadyInRecipes = (name) =>
     savedNames.includes(name) || recipes.some((r) => r.name.toLowerCase() === name.toLowerCase());
 
+  // Toggle an AI drink in/out of Tonight's Menu
+  const inTonight = (name) => (tonight?.items || []).some((t) => t.name.toLowerCase() === name.toLowerCase());
+  const toggleTonight = (d) => {
+    setTonight((t) => {
+      const items = t?.items || [];
+      const exists = items.some((x) => x.name.toLowerCase() === d.name.toLowerCase());
+      const nextItems = exists
+        ? items.filter((x) => x.name.toLowerCase() !== d.name.toLowerCase())
+        : [...items, { name: d.name, tag: "Tonight", description: d.tagline || "" }];
+      return { ...(t || {}), active: t?.active ?? true, mode: t?.mode || "pin", items: nextItems };
+    });
+  };
+
   const askAI = async (focus = "") => {
     setAiLoading(true);
     setAiError("");
@@ -1987,6 +2033,62 @@ function MakeableDrinks({ recipes, setRecipes, bottles }) {
   return (
     <div>
       <SectionLabel>What Can I Make?</SectionLabel>
+
+      {/* Tonight's Menu manager */}
+      {(tonight?.items || []).length > 0 && (
+        <Card style={{ borderLeft: `2px solid ${T.goldBright}`, marginBottom: 24 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+            <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, letterSpacing: 2, textTransform: "uppercase", color: T.goldBright }}>
+              ✨ Tonight's Menu <span style={{ color: T.goldDim }}>· {tonight.items.length}</span>
+            </div>
+            <GoldButton subtle danger onClick={() => setTonight({ active: false, mode: tonight.mode || "pin", items: [] })}>
+              Clear
+            </GoldButton>
+          </div>
+          {tonight.items.map((it, i) => (
+            <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 0" }}>
+              <span style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 16, color: T.cream }}>{it.name}</span>
+              <button
+                onClick={() => setTonight((t) => ({ ...t, items: t.items.filter((_, idx) => idx !== i) }))}
+                style={{ ...miniBtn, color: T.dangerBright, borderColor: `${T.danger}66` }}
+              >
+                ✕
+              </button>
+            </div>
+          ))}
+          {/* Active toggle + mode */}
+          <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap", alignItems: "center" }}>
+            <GoldButton
+              onClick={() => setTonight((t) => ({ ...t, active: !t.active }))}
+              style={tonight.active ? { borderColor: T.goldBright } : {}}
+            >
+              {tonight.active ? "✓ Live on Guest Menu" : "Show on Guest Menu"}
+            </GoldButton>
+            <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 9, letterSpacing: 1, textTransform: "uppercase", color: T.goldDim }}>
+              Mode:
+            </span>
+            <button
+              onClick={() => setTonight((t) => ({ ...t, mode: "pin" }))}
+              style={{ ...miniBtn, color: tonight.mode !== "replace" ? T.goldBright : T.goldDim, borderColor: tonight.mode !== "replace" ? T.goldDeep : T.border }}
+            >
+              Pin to top
+            </button>
+            <button
+              onClick={() => setTonight((t) => ({ ...t, mode: "replace" }))}
+              style={{ ...miniBtn, color: tonight.mode === "replace" ? T.goldBright : T.goldDim, borderColor: tonight.mode === "replace" ? T.goldDeep : T.border }}
+            >
+              Replace full list
+            </button>
+          </div>
+          <div style={{ fontFamily: "'Cormorant Garamond', serif", fontStyle: "italic", fontSize: 13, color: T.goldDim, marginTop: 8 }}>
+            {tonight.active
+              ? tonight.mode === "replace"
+                ? "Guests see only Tonight's Menu."
+                : "Tonight's Menu is pinned above your full list."
+              : "Not shown to guests yet — tap 'Show on Guest Menu' when ready."}
+          </div>
+        </Card>
+      )}
 
       {/* Ready to make (from your recipes) */}
       <div
@@ -2176,7 +2278,7 @@ function MakeableDrinks({ recipes, setRecipes, bottles }) {
                   {d.build}
                 </div>
               )}
-              <div style={{ marginTop: 14 }}>
+              <div style={{ marginTop: 14, display: "flex", gap: 8, flexWrap: "wrap" }}>
                 {alreadyInRecipes(d.name) ? (
                   <div
                     style={{
@@ -2193,8 +2295,14 @@ function MakeableDrinks({ recipes, setRecipes, bottles }) {
                     ✓ Saved to Recipes
                   </div>
                 ) : (
-                  <GoldButton onClick={() => saveToRecipes(d)}>+ Save to Recipes</GoldButton>
+                  <GoldButton subtle onClick={() => saveToRecipes(d)}>+ Save to Recipes</GoldButton>
                 )}
+                <GoldButton
+                  onClick={() => toggleTonight(d)}
+                  style={inTonight(d.name) ? { borderColor: T.goldBright } : {}}
+                >
+                  {inTonight(d.name) ? "✓ On Tonight's Menu" : "+ Add to Tonight"}
+                </GoldButton>
               </div>
             </Card>
           ))}
@@ -2656,7 +2764,9 @@ function SlushiLab({ slushi, setSlushi, bottles }) {
 }
 
 /* =========================== Guest View =========================== */
-function GuestView({ recipes, bottles = [], addToQueue, barName }) {
+function GuestView({ recipes, bottles = [], tonight, addToQueue, barName }) {
+  const tonightActive = tonight?.active && (tonight?.items || []).length > 0;
+  const tonightReplace = tonightActive && tonight.mode === "replace";
   const [name, setName] = useState("");
   const [confirmed, setConfirmed] = useState(false);
   const [custom, setCustom] = useState("");
@@ -2791,29 +2901,40 @@ function GuestView({ recipes, bottles = [], addToQueue, barName }) {
           </div>
         )}
 
-        {/* Menu — featured pinned first, then grouped with section headers */}
+        {/* Menu — Tonight's Menu, then featured, then grouped sections */}
         {(() => {
-          const featured = menu.filter((r) => r.featured);
-          const rest = menu.filter((r) => !r.featured);
-          const order2 = [];
-          const seen = new Set();
-          rest.forEach((r) => {
-            const g = r.group || "More Cocktails";
-            if (!seen.has(g)) {
-              seen.add(g);
-              order2.push(g);
-            }
-          });
-          // Featured counts as a section for header purposes
-          const single = order2.length <= 1 && featured.length === 0;
+          // Resolve tonight items to full recipe data when available (for descriptions)
+          const tonightItems = tonightActive
+            ? tonight.items.map((it) => {
+                const full = recipes.find((r) => r.name.toLowerCase() === it.name.toLowerCase());
+                return full || { id: "t_" + it.name, name: it.name, tag: it.tag || "Tonight", description: it.description || "" };
+              })
+            : [];
 
           const sections = [];
-          if (featured.length > 0) {
-            sections.push({ key: "__featured", label: "✨ Featured Tonight", items: featured, always: true });
+          if (tonightItems.length > 0) {
+            sections.push({ key: "__tonight", label: "✨ Tonight's Menu", items: tonightItems, always: true });
           }
-          order2.forEach((g) => {
-            sections.push({ key: g, label: g, items: rest.filter((r) => (r.group || "More Cocktails") === g) });
-          });
+
+          // In replace mode, show ONLY Tonight's Menu
+          if (!tonightReplace) {
+            const featured = menu.filter((r) => r.featured);
+            const rest = menu.filter((r) => !r.featured);
+            const order2 = [];
+            const seen = new Set();
+            rest.forEach((r) => {
+              const g = r.group || "More Cocktails";
+              if (!seen.has(g)) { seen.add(g); order2.push(g); }
+            });
+            if (featured.length > 0) {
+              sections.push({ key: "__featured", label: "✨ Featured Tonight", items: featured, always: true });
+            }
+            order2.forEach((g) => {
+              sections.push({ key: g, label: g, items: rest.filter((r) => (r.group || "More Cocktails") === g) });
+            });
+          }
+
+          const single = sections.length <= 1;
 
           return sections.map((section) => {
             const g = section.label;
@@ -3105,11 +3226,11 @@ function AdminView({ state, setters, guestUrl, onPreviewGuest }) {
       {/* Content */}
       <div style={{ maxWidth: 640, margin: "0 auto", padding: "24px" }}>
         {tab === "inventory" && <Inventory bottles={state.bottles} setBottles={setters.setBottles} />}
-        {tab === "recipes" && <Recipes recipes={state.recipes} setRecipes={setters.setRecipes} />}
-        {tab === "make" && <MakeableDrinks recipes={state.recipes} setRecipes={setters.setRecipes} bottles={state.bottles} />}
+        {tab === "recipes" && <Recipes recipes={state.recipes} setRecipes={setters.setRecipes} tonight={state.tonight} setTonight={setters.setTonight} />}
+        {tab === "make" && <MakeableDrinks recipes={state.recipes} setRecipes={setters.setRecipes} bottles={state.bottles} tonight={state.tonight} setTonight={setters.setTonight} />}
         {tab === "slushi" && <SlushiLab slushi={state.slushi || []} setSlushi={setters.setSlushi} bottles={state.bottles} />}
         {tab === "queue" && <Queue queue={state.queue} setQueue={setters.setQueue} />}
-        {tab === "share" && <ShareMenu guestUrl={guestUrl} recipes={state.recipes} barName={state.barName} />}
+        {tab === "share" && <ShareMenu guestUrl={guestUrl} recipes={state.recipes} tonight={state.tonight} barName={state.barName} />}
       </div>
     </div>
   );
@@ -3121,6 +3242,7 @@ export default function App() {
   const [recipes, setRecipes] = useSharedState("recipes", SEED_RECIPES);
   const [queue, setQueue] = useSharedState("queue", []);
   const [slushi, setSlushi] = useSharedState("slushi", []);
+  const [tonight, setTonight] = useSharedState("tonight", { active: false, mode: "pin", items: [] });
   const barName = "Trixon";
 
   // Determine view from URL hash (so QR can point to #guest)
@@ -3155,7 +3277,7 @@ export default function App() {
     <div style={{ fontFamily: "'Cormorant Garamond', serif", background: T.bg, minHeight: "100vh" }}>
       {view === "guest" ? (
         <div>
-          <GuestView recipes={recipes} bottles={bottles} addToQueue={addToQueue} barName={barName} />
+          <GuestView recipes={recipes} bottles={bottles} tonight={tonight} addToQueue={addToQueue} barName={barName} />
           <button
             onClick={() => {
               window.location.hash = "";
@@ -3182,8 +3304,8 @@ export default function App() {
         </div>
       ) : (
         <AdminView
-          state={{ bottles, recipes, queue, slushi, barName }}
-          setters={{ setBottles, setRecipes, setQueue, setSlushi }}
+          state={{ bottles, recipes, queue, slushi, tonight, barName }}
+          setters={{ setBottles, setRecipes, setQueue, setSlushi, setTonight }}
           guestUrl={guestUrl}
           onPreviewGuest={() => {
             window.location.hash = "guest";
