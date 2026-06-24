@@ -793,6 +793,33 @@ function Inventory({ bottles, setBottles }) {
         </GoldButton>
       )}
 
+      {/* Auto low-stock suggestions: bottles <=25% not already flagged */}
+      {(() => {
+        const lowNotFlagged = bottles.filter((b) => b.level <= 25 && !b.order);
+        if (lowNotFlagged.length === 0) return null;
+        return (
+          <Card style={{ marginTop: 24, borderLeft: `2px solid ${T.dangerBright}` }}>
+            <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, letterSpacing: 2, textTransform: "uppercase", color: T.dangerBright, marginBottom: 10 }}>
+              Running Low — Add to Shopping List?
+            </div>
+            {lowNotFlagged.map((b) => (
+              <div key={b.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "6px 0" }}>
+                <span style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 16, color: T.cream }}>
+                  {b.name}
+                  <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, color: T.dangerBright, marginLeft: 8 }}>{b.level}%</span>
+                </span>
+                <GoldButton subtle onClick={() => update(b.id, { order: true })}>+ Add</GoldButton>
+              </div>
+            ))}
+            <div style={{ marginTop: 10 }}>
+              <GoldButton onClick={() => lowNotFlagged.forEach((b) => update(b.id, { order: true }))}>
+                + Add All to List
+              </GoldButton>
+            </div>
+          </Card>
+        );
+      })()}
+
       {/* Shopping list — grouped by category, with check-off to remove */}
       {bottles.some((b) => b.order) && (
         <Card style={{ marginTop: 24, borderLeft: `2px solid ${T.gold}` }}>
@@ -1605,6 +1632,17 @@ function Recipes({ recipes, setRecipes }) {
 function Queue({ queue, setQueue }) {
   const remove = (id) => setQueue((q) => q.filter((item) => item.id !== id));
 
+  // "x min ago" from a timestamp
+  const timeAgo = (ts) => {
+    if (!ts) return "";
+    const mins = Math.floor((Date.now() - ts) / 60000);
+    if (mins < 1) return "just now";
+    if (mins === 1) return "1 min ago";
+    if (mins < 60) return `${mins} min ago`;
+    const hrs = Math.floor(mins / 60);
+    return hrs === 1 ? "1 hr ago" : `${hrs} hrs ago`;
+  };
+
   return (
     <div>
       <SectionLabel>Drink Queue</SectionLabel>
@@ -1663,7 +1701,27 @@ function Queue({ queue, setQueue }) {
                 }}
               >
                 — {item.guest}
+                {item.time && (
+                  <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, color: T.goldDim, marginLeft: 8 }}>
+                    · {timeAgo(item.time)}
+                  </span>
+                )}
               </div>
+              {item.note && (
+                <div
+                  style={{
+                    marginTop: 6,
+                    padding: "6px 10px",
+                    background: "rgba(180,132,42,0.08)",
+                    borderLeft: `2px solid ${T.goldDeep}`,
+                    fontFamily: "'Cormorant Garamond', serif",
+                    fontSize: 14,
+                    color: T.cream,
+                  }}
+                >
+                  “{item.note}”
+                </div>
+              )}
             </div>
             <GoldButton onClick={() => remove(item.id)}>✓ Done</GoldButton>
           </div>
@@ -1674,12 +1732,66 @@ function Queue({ queue, setQueue }) {
 }
 
 /* =========================== Share Menu =========================== */
-function ShareMenu({ guestUrl }) {
+function ShareMenu({ guestUrl, recipes = [], barName = "Trixon" }) {
   const [copied, setCopied] = useState(false);
   const copy = () => {
     navigator.clipboard?.writeText(guestUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 1800);
+  };
+
+  // Build a printable menu in a new window
+  const printMenu = () => {
+    const menu = recipes.filter((r) => r.available);
+    const featured = menu.filter((r) => r.featured);
+    const rest = menu.filter((r) => !r.featured);
+    const groups = [];
+    if (featured.length) groups.push(["✨ Featured Tonight", featured]);
+    const seen = new Set();
+    rest.forEach((r) => {
+      const g = r.group || "Cocktails";
+      if (!seen.has(g)) { seen.add(g); groups.push([g, rest.filter((x) => (x.group || "Cocktails") === g)]); }
+    });
+    const section = groups
+      .map(
+        ([title, items]) => `
+          <div class="section-title">${title}</div>
+          ${items
+            .map(
+              (r) => `
+            <div class="drink">
+              <div class="drink-name">${r.name}</div>
+              ${r.tag ? `<div class="drink-tag">${r.tag}</div>` : ""}
+              ${r.description ? `<div class="drink-desc">${r.description}</div>` : ""}
+            </div>`
+            )
+            .join("")}
+        `
+      )
+      .join("");
+
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${barName} Menu</title>
+      <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Cormorant+Garamond:ital@0;1&family=Space+Mono&display=swap" rel="stylesheet">
+      <style>
+        @page { margin: 0.75in; }
+        body { font-family: 'Cormorant Garamond', serif; color: #2a2018; background: #fdfaf3; padding: 40px; }
+        .head { text-align: center; margin-bottom: 36px; border-bottom: 2px solid #b4842a; padding-bottom: 20px; }
+        .bar-name { font-family: 'Playfair Display', serif; font-size: 44px; font-weight: 700; color: #1c1813; letter-spacing: 1px; }
+        .bar-sub { font-style: italic; font-size: 18px; color: #9a7a3a; margin-top: 4px; }
+        .section-title { font-family: 'Playfair Display', serif; font-style: italic; font-size: 22px; color: #b4842a; text-align: center; margin: 28px 0 14px; }
+        .drink { margin-bottom: 16px; text-align: center; }
+        .drink-name { font-family: 'Playfair Display', serif; font-size: 22px; color: #1c1813; }
+        .drink-tag { font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: #9a7a3a; margin: 2px 0; }
+        .drink-desc { font-size: 16px; font-style: italic; color: #5a4a32; max-width: 460px; margin: 4px auto 0; }
+      </style></head>
+      <body>
+        <div class="head"><div class="bar-name">${barName}</div><div class="bar-sub">— Cocktail Menu —</div></div>
+        ${section}
+        <script>window.onload = () => { window.print(); }<\/script>
+      </body></html>`;
+
+    const w = window.open("", "_blank");
+    if (w) { w.document.write(html); w.document.close(); }
   };
   return (
     <div>
@@ -1733,7 +1845,7 @@ function ShareMenu({ guestUrl }) {
             marginBottom: 8,
           }}
         >
-          Printable Card
+          Printable Menu
         </div>
         <div
           style={{
@@ -1741,11 +1853,14 @@ function ShareMenu({ guestUrl }) {
             fontSize: 16,
             color: T.text,
             fontStyle: "italic",
+            marginBottom: 14,
           }}
         >
-          Use your browser's Print function on the guest menu screen to print a branded
-          card for your bar. (When hosted live, this becomes a one-tap PDF.)
+          Generate an elegant, framed-style menu of your available drinks — perfect to print and set on the bar top.
         </div>
+        <GoldButton onClick={printMenu} style={{ width: "100%", padding: 12 }}>
+          🖨️ Print / Save Menu as PDF
+        </GoldButton>
       </Card>
     </div>
   );
@@ -1997,6 +2112,19 @@ function MakeableDrinks({ recipes, setRecipes, bottles }) {
           <div style={{ fontFamily: "'Cormorant Garamond', serif", fontStyle: "italic", fontSize: 13, color: T.goldDim, marginTop: 8 }}>
             Tell the AI a vibe, occasion, season, or flavor and it'll tailor the suggestions to your stock.
           </div>
+
+          {/* Curated full-menu pairing */}
+          <div style={{ marginTop: 16, paddingTop: 16, borderTop: `1px dashed ${T.border}` }}>
+            <GoldButton
+              onClick={() => askAI("Design a cohesive 3-drink menu for a gathering tonight: one crowd-pleasing classic, one elegant option, and one fun or unexpected choice that all pair well together and use my stock.")}
+              style={{ width: "100%", padding: 14 }}
+            >
+              {aiLoading ? "Thinking…" : "🍽️ Build Me a Menu for Tonight"}
+            </GoldButton>
+            <div style={{ fontFamily: "'Cormorant Garamond', serif", fontStyle: "italic", fontSize: 13, color: T.goldDim, marginTop: 8 }}>
+              A curated trio designed to work together for an evening of entertaining.
+            </div>
+          </div>
         </div>
 
         {aiError && (
@@ -2075,12 +2203,465 @@ function MakeableDrinks({ recipes, setRecipes, bottles }) {
   );
 }
 
+/* ===================== Ninja Slushi Lab (admin) ================== */
+/*
+  Freeze science (from Ninja SLUSHi guidance):
+  - Base needs >= 4% sugar by volume to freeze into slush.
+  - Spiked Slush preset works best with final ABV roughly 2.8%-16%.
+  - Too much alcohol = won't firm up; too little sugar = won't freeze.
+  We estimate total sugar grams and final ABV from ingredient rows, where
+  each row has: amount (oz), sugar (g per oz), abv (% of that ingredient).
+*/
+const OZ_TO_ML = 29.5735;
+const SUGAR_MIN_PCT = 4; // % sugar by weight/volume floor
+const ABV_MIN = 2.8;
+const ABV_MAX = 16;
+
+function computeSlushi(rows) {
+  let totalMl = 0;
+  let sugarG = 0;
+  let alcoholMl = 0;
+  rows.forEach((r) => {
+    const oz = parseFloat(r.amount) || 0;
+    const ml = oz * OZ_TO_ML;
+    totalMl += ml;
+    sugarG += (parseFloat(r.sugar) || 0) * oz; // sugar grams per oz * oz
+    alcoholMl += ml * ((parseFloat(r.abv) || 0) / 100);
+  });
+  // Sugar % by volume: grams sugar per 100 ml (4 g/100ml ≈ 4%)
+  const sugarPct = totalMl > 0 ? (sugarG / totalMl) * 100 : 0;
+  const finalAbv = totalMl > 0 ? (alcoholMl / totalMl) * 100 : 0;
+  const hasAlcohol = alcoholMl > 0.5;
+
+  const issues = [];
+  const fixes = [];
+  if (totalMl === 0) {
+    return { totalMl, totalOz: 0, sugarPct, finalAbv, hasAlcohol, ok: false, issues: ["Add ingredients to check."], fixes: [] };
+  }
+  if (sugarPct < SUGAR_MIN_PCT) {
+    issues.push(`Sugar is ${sugarPct.toFixed(1)}% — below the 4% minimum to freeze.`);
+    // 2 tsp sugar ≈ 8 g, per 8 oz. Estimate grams needed.
+    const targetG = (SUGAR_MIN_PCT / 100) * totalMl;
+    const addG = Math.ceil(targetG - sugarG);
+    const tsp = Math.max(1, Math.round(addG / 4));
+    fixes.push(`Add ~${addG} g sugar (about ${tsp} tsp simple syrup or sugar) and dissolve before pouring.`);
+  }
+  if (hasAlcohol && finalAbv > ABV_MAX) {
+    issues.push(`Alcohol is ${finalAbv.toFixed(1)}% — above ~16%, it may not firm up.`);
+    fixes.push("Add more non-alcoholic liquid (juice, mixer, or water with sugar) to dilute.");
+  }
+  if (hasAlcohol && finalAbv > 0 && finalAbv < ABV_MIN) {
+    issues.push(`Alcohol is only ${finalAbv.toFixed(1)}% — fine to freeze, flavor may be light.`);
+  }
+  const ok = sugarPct >= SUGAR_MIN_PCT && (!hasAlcohol || finalAbv <= ABV_MAX);
+  return { totalMl, totalOz: totalMl / OZ_TO_ML, sugarPct, finalAbv, hasAlcohol, ok, issues, fixes };
+}
+
+function SlushiLab({ slushi, setSlushi, bottles }) {
+  const [editing, setEditing] = useState(null);
+  const blank = {
+    id: "",
+    name: "",
+    description: "",
+    rows: [{ name: "", amount: "", sugar: "", abv: "" }],
+    notes: "",
+  };
+  const [draft, setDraft] = useState(blank);
+  const [estimating, setEstimating] = useState(false);
+  const [estError, setEstError] = useState("");
+
+  // AI Slushi suggestions
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState("");
+  const [aiResults, setAiResults] = useState(null);
+  const [savedNames, setSavedNames] = useState([]);
+  const [batchTarget, setBatchTarget] = useState({}); // recipeId -> target total oz
+  const [customTotal, setCustomTotal] = useState({}); // recipeId -> custom field value
+
+  // Scale a recipe's rows so the total volume hits targetOz, keeping ratios.
+  const scaleRows = (rows, targetOz) => {
+    const baseOz = (rows || []).reduce((sum, r) => sum + (parseFloat(r.amount) || 0), 0);
+    if (!baseOz || !targetOz) return rows;
+    const mult = targetOz / baseOz;
+    return rows.map((r) => {
+      const oz = parseFloat(r.amount);
+      if (!oz) return r;
+      const scaled = Math.round(oz * mult * 100) / 100;
+      return { ...r, amount: String(scaled) };
+    });
+  };
+
+  const startNew = () => { setDraft({ ...blank, id: "s" + Date.now() }); setEditing("new"); };
+  const startEdit = (s) => { setDraft(JSON.parse(JSON.stringify(s))); setEditing(s.id); };
+  const save = () => {
+    if (!draft.name.trim()) return;
+    setSlushi((list) => {
+      const exists = list.some((x) => x.id === draft.id);
+      return exists ? list.map((x) => (x.id === draft.id ? draft : x)) : [...list, draft];
+    });
+    setEditing(null);
+  };
+  const remove = (id) => setSlushi((list) => list.filter((x) => x.id !== id));
+
+  const setRow = (i, patch) =>
+    setDraft((d) => ({ ...d, rows: d.rows.map((r, idx) => (idx === i ? { ...r, ...patch } : r)) }));
+  const addRow = () => setDraft((d) => ({ ...d, rows: [...d.rows, { name: "", amount: "", sugar: "", abv: "" }] }));
+  const removeRow = (i) => setDraft((d) => ({ ...d, rows: d.rows.filter((_, idx) => idx !== i) }));
+
+  // AI estimate sugar + abv for the current draft rows
+  const estimate = async () => {
+    const named = draft.rows.filter((r) => r.name.trim());
+    if (named.length === 0) { setEstError("Add ingredient names first."); return; }
+    setEstimating(true);
+    setEstError("");
+    try {
+      const res = await fetch("/api/slushi", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mode: "estimate", ingredients: named.map((r) => ({ name: r.name, amount: r.amount })) }),
+      });
+      if (!res.ok) {
+        let msg = `Estimate failed (status ${res.status}).`;
+        try { const j = await res.json(); if (j && j.error) msg = j.error; } catch {}
+        if (res.status === 500 && msg.includes("missing")) msg = "Add your Anthropic API key in Vercel to enable AI estimates.";
+        throw new Error(msg);
+      }
+      const data = await res.json();
+      const ests = data.estimates || [];
+      // Merge estimates back by name order
+      setDraft((d) => ({
+        ...d,
+        rows: d.rows.map((r) => {
+          if (!r.name.trim()) return r;
+          const match = ests.find((e) => e.name && e.name.toLowerCase() === r.name.toLowerCase());
+          return match ? { ...r, sugar: String(match.sugarPerOz ?? r.sugar), abv: String(match.abv ?? r.abv) } : r;
+        }),
+      }));
+    } catch (e) {
+      setEstError(e.message || "Couldn't estimate.");
+    } finally {
+      setEstimating(false);
+    }
+  };
+
+  // AI suggest Slushi-ready drinks from inventory
+  const askSlushiAI = async () => {
+    setAiLoading(true); setAiError(""); setAiResults(null);
+    const inStock = bottles.filter((b) => (b.level ?? 0) > 0).map((b) => `${b.name}${b.category ? ` (${b.category})` : ""}`);
+    try {
+      const res = await fetch("/api/slushi", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mode: "suggest", inventory: inStock }),
+      });
+      if (!res.ok) {
+        let msg = `Request failed (status ${res.status}).`;
+        try { const j = await res.json(); if (j && j.error) msg = j.error; } catch {}
+        if (res.status === 500 && msg.includes("missing")) msg = "Add your Anthropic API key in Vercel to enable suggestions.";
+        throw new Error(msg);
+      }
+      const data = await res.json();
+      if (!data.suggestions || !Array.isArray(data.suggestions) || data.suggestions.length === 0) {
+        throw new Error("Couldn't read suggestions. Try again.");
+      }
+      setAiResults(data.suggestions);
+    } catch (e) {
+      setAiError(e.message || "Something went wrong.");
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const saveAiToSlushi = (d) => {
+    const rows = (Array.isArray(d.ingredients) ? d.ingredients : []).map((ing) => ({
+      name: ing.name || String(ing),
+      amount: ing.amount ? String(ing.amount).replace(/[^\d.]/g, "") : "",
+      sugar: ing.sugarPerOz != null ? String(ing.sugarPerOz) : "",
+      abv: ing.abv != null ? String(ing.abv) : "",
+    }));
+    const newItem = {
+      id: "s" + Date.now() + Math.floor(Math.random() * 1000),
+      name: d.name,
+      description: d.tagline || "",
+      rows: rows.length ? rows : [{ name: "", amount: "", sugar: "", abv: "" }],
+      notes: d.build || "",
+    };
+    setSlushi((list) => (list.some((x) => x.name.toLowerCase() === d.name.toLowerCase()) ? list : [...list, newItem]));
+    setSavedNames((s) => (s.includes(d.name) ? s : [...s, d.name]));
+  };
+  const alreadySaved = (name) =>
+    savedNames.includes(name) || slushi.some((x) => x.name.toLowerCase() === name.toLowerCase());
+
+  // ---------- Editor ----------
+  if (editing) {
+    const calc = computeSlushi(draft.rows);
+    return (
+      <div>
+        <SectionLabel>{editing === "new" ? "New Slushi Recipe" : "Edit Slushi Recipe"}</SectionLabel>
+        <Card>
+          <Field label="Drink Name" value={draft.name} onChange={(v) => setDraft({ ...draft, name: v })} />
+          <Field label="Description" value={draft.description} onChange={(v) => setDraft({ ...draft, description: v })} multiline />
+
+          <FieldLabel>Ingredients (amount in oz · sugar g/oz · ABV %)</FieldLabel>
+          {draft.rows.map((r, i) => (
+            <div key={i} style={{ display: "flex", gap: 6, marginBottom: 8, flexWrap: "wrap" }}>
+              <input
+                value={r.name}
+                placeholder="Ingredient"
+                onChange={(e) => setRow(i, { name: e.target.value })}
+                style={{ flex: "2 1 120px", background: "#15110b", border: `1px solid ${T.border}`, color: T.cream, fontFamily: "'Cormorant Garamond', serif", fontSize: 15, padding: "8px 10px", outline: "none" }}
+              />
+              <input
+                value={r.amount}
+                placeholder="oz"
+                onChange={(e) => setRow(i, { amount: e.target.value })}
+                style={{ width: 50, background: "#15110b", border: `1px solid ${T.border}`, color: T.gold, fontFamily: "'Space Mono', monospace", fontSize: 13, padding: "8px 6px", outline: "none", textAlign: "center" }}
+              />
+              <input
+                value={r.sugar}
+                placeholder="sug"
+                onChange={(e) => setRow(i, { sugar: e.target.value })}
+                title="sugar grams per oz"
+                style={{ width: 46, background: "#15110b", border: `1px solid ${T.border}`, color: T.cream, fontFamily: "'Space Mono', monospace", fontSize: 12, padding: "8px 4px", outline: "none", textAlign: "center" }}
+              />
+              <input
+                value={r.abv}
+                placeholder="abv"
+                onChange={(e) => setRow(i, { abv: e.target.value })}
+                title="alcohol % of this ingredient"
+                style={{ width: 46, background: "#15110b", border: `1px solid ${T.border}`, color: T.cream, fontFamily: "'Space Mono', monospace", fontSize: 12, padding: "8px 4px", outline: "none", textAlign: "center" }}
+              />
+              <button onClick={() => removeRow(i)} style={{ ...miniBtn, color: T.dangerBright, borderColor: `${T.danger}66` }}>✕</button>
+            </div>
+          ))}
+          <div style={{ display: "flex", gap: 8, marginBottom: 14, flexWrap: "wrap" }}>
+            <GoldButton subtle onClick={addRow}>+ Ingredient</GoldButton>
+            <GoldButton subtle onClick={estimate}>
+              {estimating ? "Estimating…" : "✨ AI: estimate sugar & ABV"}
+            </GoldButton>
+          </div>
+          {estError && (
+            <div style={{ fontFamily: "'Cormorant Garamond', serif", fontStyle: "italic", color: T.dangerBright, fontSize: 14, marginBottom: 12 }}>
+              {estError}
+            </div>
+          )}
+
+          {/* Freeze check */}
+          <div
+            style={{
+              padding: "14px 16px",
+              marginBottom: 16,
+              borderRadius: 6,
+              border: `1px solid ${calc.ok ? T.goldDeep : T.danger}`,
+              background: calc.ok ? "rgba(180,132,42,0.08)" : "rgba(192,57,43,0.08)",
+            }}
+          >
+            <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, letterSpacing: 2, textTransform: "uppercase", color: calc.ok ? T.goldBright : T.dangerBright, marginBottom: 8 }}>
+              {calc.ok ? "✓ Should Freeze" : "⚠ Won't Freeze Properly"}
+            </div>
+            <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 12, color: T.cream, marginBottom: 4 }}>
+              Total: {calc.totalOz.toFixed(1)} oz · Sugar: {calc.sugarPct.toFixed(1)}% {calc.hasAlcohol ? `· ABV: ${calc.finalAbv.toFixed(1)}%` : ""}
+            </div>
+            {calc.issues.map((iss, k) => (
+              <div key={k} style={{ fontFamily: "'Cormorant Garamond', serif", fontStyle: "italic", fontSize: 14, color: T.text, marginTop: 4 }}>• {iss}</div>
+            ))}
+            {calc.fixes.map((fx, k) => (
+              <div key={k} style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 14, color: T.goldBright, marginTop: 4 }}>→ {fx}</div>
+            ))}
+          </div>
+
+          <Field label="Notes / Method" value={draft.notes} onChange={(v) => setDraft({ ...draft, notes: v })} multiline />
+
+          <div style={{ display: "flex", gap: 8 }}>
+            <GoldButton onClick={save}>Save Slushi Recipe</GoldButton>
+            <GoldButton subtle onClick={() => setEditing(null)}>Cancel</GoldButton>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  // ---------- List view ----------
+  return (
+    <div>
+      <SectionLabel>Ninja Slushi</SectionLabel>
+      <div style={{ fontFamily: "'Cormorant Garamond', serif", fontStyle: "italic", fontSize: 15, color: T.goldDim, marginBottom: 18 }}>
+        Your frozen-drink workspace. Each recipe is checked against the machine's rules:
+        at least 4% sugar to freeze, and 2.8–16% ABV for spiked slushes.
+      </div>
+
+      {slushi.map((s) => {
+        const target = batchTarget[s.id] || null;
+        const displayRows = target ? scaleRows(s.rows || [], target) : (s.rows || []);
+        const calc = computeSlushi(displayRows);
+        const baseOz = (s.rows || []).reduce((sum, r) => sum + (parseFloat(r.amount) || 0), 0);
+        return (
+          <Card key={s.id}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, color: T.goldBright }}>{s.name}</div>
+                {s.description && (
+                  <div style={{ fontFamily: "'Cormorant Garamond', serif", fontStyle: "italic", fontSize: 15, color: T.text, marginTop: 2 }}>{s.description}</div>
+                )}
+              </div>
+              <span
+                style={{
+                  fontFamily: "'Space Mono', monospace", fontSize: 9, letterSpacing: 1, textTransform: "uppercase",
+                  color: calc.ok ? T.goldBright : T.dangerBright,
+                  border: `1px solid ${calc.ok ? T.goldDeep : T.danger}`, borderRadius: 3, padding: "2px 7px", whiteSpace: "nowrap",
+                }}
+              >
+                {calc.ok ? "✓ Freezes" : "⚠ Check"}
+              </span>
+            </div>
+            <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 11, color: T.goldDim, marginTop: 8 }}>
+              {calc.totalOz.toFixed(1)} oz · {calc.sugarPct.toFixed(1)}% sugar{calc.hasAlcohol ? ` · ${calc.finalAbv.toFixed(1)}% ABV` : ""}
+            </div>
+
+            {/* Batch size controls */}
+            <div style={{ marginTop: 12, marginBottom: 6 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 9, letterSpacing: 1, textTransform: "uppercase", color: T.goldDim }}>
+                  Make:
+                </span>
+                {[
+                  { label: "Recipe", oz: null },
+                  { label: "32 oz", oz: 32 },
+                  { label: "64 oz", oz: 64 },
+                  { label: "96 oz", oz: 96 },
+                ].map((opt) => {
+                  const active = (batchTarget[s.id] || null) === opt.oz;
+                  return (
+                    <button
+                      key={opt.label}
+                      onClick={() => {
+                        setBatchTarget((b) => ({ ...b, [s.id]: opt.oz }));
+                        setCustomTotal((c) => ({ ...c, [s.id]: "" }));
+                      }}
+                      style={{
+                        background: active ? `${T.goldDeep}22` : "transparent",
+                        border: `1px solid ${active ? T.goldDeep : T.border}`,
+                        color: active ? T.goldBright : T.goldDim,
+                        fontFamily: "'Space Mono', monospace",
+                        fontSize: 10,
+                        padding: "3px 9px",
+                        borderRadius: 4,
+                        cursor: "pointer",
+                      }}
+                    >
+                      {opt.label}
+                    </button>
+                  );
+                })}
+                <input
+                  value={customTotal[s.id] || ""}
+                  placeholder="oz"
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setCustomTotal((c) => ({ ...c, [s.id]: v }));
+                    const n = parseFloat(v);
+                    setBatchTarget((b) => ({ ...b, [s.id]: n > 0 ? n : null }));
+                  }}
+                  style={{
+                    width: 56,
+                    background: "#15110b",
+                    border: `1px solid ${customTotal[s.id] ? T.goldDeep : T.border}`,
+                    color: T.gold,
+                    fontFamily: "'Space Mono', monospace",
+                    fontSize: 12,
+                    padding: "4px 6px",
+                    outline: "none",
+                    textAlign: "center",
+                    borderRadius: 4,
+                  }}
+                />
+              </div>
+              {target && (
+                <div style={{ fontFamily: "'Cormorant Garamond', serif", fontStyle: "italic", fontSize: 13, color: T.goldDim, marginTop: 6 }}>
+                  Scaled from {baseOz.toFixed(1)} oz recipe to {target} oz batch
+                  {target > 88 ? " — note: Ninja Slushi holds ~88 oz, you may need two runs." : "."}
+                </div>
+              )}
+            </div>
+
+            {displayRows.filter((r) => r.name).map((r, i) => (
+              <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "3px 0", borderBottom: `1px solid #2c2415`, fontFamily: "'Cormorant Garamond', serif", fontSize: 15, color: T.text }}>
+                {r.name}
+                <span style={{ color: T.gold, fontFamily: "'Space Mono', monospace", fontSize: 12 }}>{r.amount ? `${r.amount} oz` : ""}</span>
+              </div>
+            ))}
+            {s.notes && (
+              <div style={{ marginTop: 10, padding: "8px 10px", background: "rgba(180,132,42,0.06)", borderLeft: `2px solid ${T.goldDeep}`, fontFamily: "'Cormorant Garamond', serif", fontStyle: "italic", fontSize: 14, color: T.goldDim }}>
+                {s.notes}
+              </div>
+            )}
+            <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+              <GoldButton subtle onClick={() => startEdit(s)}>Edit</GoldButton>
+              <GoldButton subtle danger onClick={() => remove(s.id)}>Delete</GoldButton>
+            </div>
+          </Card>
+        );
+      })}
+
+      <GoldButton onClick={startNew} style={{ width: "100%", padding: 14, marginBottom: 24 }}>
+        + New Slushi Recipe
+      </GoldButton>
+
+      {/* AI Slushi suggestions */}
+      <div style={{ paddingTop: 20, borderTop: `1px solid ${T.border}` }}>
+        <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, letterSpacing: 2, textTransform: "uppercase", color: T.gold, marginBottom: 8 }}>
+          AI Slushi Ideas <span style={{ color: T.goldDim }}>· machine-ready frozen drinks</span>
+        </div>
+        <div style={{ fontFamily: "'Cormorant Garamond', serif", fontStyle: "italic", fontSize: 15, color: T.goldDim, marginBottom: 14 }}>
+          Ask AI for Ninja Slushi–friendly drinks from your stock — each comes pre-checked for the 4% sugar rule. Save the ones you like straight to this tab.
+        </div>
+        <GoldButton onClick={askSlushiAI} style={{ width: "100%", padding: 14 }}>
+          {aiLoading ? "Thinking…" : "✨ Ask AI for Slushi Drinks"}
+        </GoldButton>
+
+        {aiError && (
+          <Card style={{ marginTop: 14, borderLeft: `2px solid ${T.danger}` }}>
+            <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 16, color: T.dangerBright }}>{aiError}</div>
+          </Card>
+        )}
+
+        {aiResults && aiResults.map((d, i) => (
+          <Card key={i} style={{ marginTop: 14 }}>
+            <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, color: T.goldBright }}>
+              {d.name}<span style={{ fontFamily: "'Space Mono', monospace", fontSize: 8, letterSpacing: 1, color: T.goldDim, marginLeft: 8, border: `1px solid ${T.border}`, borderRadius: 3, padding: "2px 6px", textTransform: "uppercase" }}>Slushi</span>
+            </div>
+            {d.tagline && <div style={{ fontFamily: "'Cormorant Garamond', serif", fontStyle: "italic", fontSize: 16, color: T.text, margin: "4px 0 8px" }}>{d.tagline}</div>}
+            {Array.isArray(d.ingredients) && d.ingredients.map((ing, j) => (
+              <div key={j} style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 15, color: T.cream, padding: "2px 0" }}>
+                {typeof ing === "string" ? ing : `${ing.amount || ""} ${ing.name || ""}`.trim()}
+              </div>
+            ))}
+            {d.build && (
+              <div style={{ marginTop: 10, padding: "10px 12px", background: "rgba(180,132,42,0.06)", borderLeft: `2px solid ${T.goldDeep}`, fontFamily: "'Cormorant Garamond', serif", fontStyle: "italic", fontSize: 15, color: T.goldDim }}>
+                {d.build}
+              </div>
+            )}
+            <div style={{ marginTop: 14 }}>
+              {alreadySaved(d.name) ? (
+                <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, letterSpacing: 1, textTransform: "uppercase", color: T.goldDim }}>✓ Saved to Slushi</div>
+              ) : (
+                <GoldButton onClick={() => saveAiToSlushi(d)}>+ Save to Slushi Tab</GoldButton>
+              )}
+            </div>
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /* =========================== Guest View =========================== */
 function GuestView({ recipes, bottles = [], addToQueue, barName }) {
   const [name, setName] = useState("");
   const [confirmed, setConfirmed] = useState(false);
   const [custom, setCustom] = useState("");
   const [showCustom, setShowCustom] = useState(false);
+  const [note, setNote] = useState("");
   const menu = recipes.filter((r) => r.available);
   // Beer & Cider in stock (level > 0) become requestable bottle options
   const beers = bottles.filter((b) => parentGroup(b.category) === "Beer & Cider" && b.level > 0);
@@ -2092,11 +2673,13 @@ function GuestView({ recipes, bottles = [], addToQueue, barName }) {
       guest: name.trim(),
       drink: drinkName,
       custom: isCustom,
+      note: note.trim(),
       time: Date.now(),
     });
     setConfirmed(true);
     setTimeout(() => setConfirmed(false), 2600);
     setCustom("");
+    setNote("");
     setShowCustom(false);
   };
 
@@ -2161,6 +2744,28 @@ function GuestView({ recipes, bottles = [], addToQueue, barName }) {
               fontFamily: "'Cormorant Garamond', serif",
               fontSize: 20,
               padding: "12px 14px",
+              outline: "none",
+              boxSizing: "border-box",
+              textAlign: "center",
+            }}
+          />
+        </div>
+
+        {/* Optional special request note */}
+        <div style={{ marginBottom: 28 }}>
+          <FieldLabel>Special Request (optional)</FieldLabel>
+          <input
+            value={note}
+            placeholder="e.g. extra dirty, no garnish, light ice…"
+            onChange={(e) => setNote(e.target.value)}
+            style={{
+              width: "100%",
+              background: "#15110b",
+              border: `1px solid ${T.border}`,
+              color: T.cream,
+              fontFamily: "'Cormorant Garamond', serif",
+              fontSize: 16,
+              padding: "10px 14px",
               outline: "none",
               boxSizing: "border-box",
               textAlign: "center",
@@ -2408,6 +3013,7 @@ function AdminView({ state, setters, guestUrl, onPreviewGuest }) {
     { id: "inventory", label: "Inventory" },
     { id: "recipes", label: "Recipes" },
     { id: "make", label: "Make" },
+    { id: "slushi", label: "Slushi" },
     { id: "queue", label: "Queue" },
     { id: "share", label: "Share" },
   ];
@@ -2501,8 +3107,9 @@ function AdminView({ state, setters, guestUrl, onPreviewGuest }) {
         {tab === "inventory" && <Inventory bottles={state.bottles} setBottles={setters.setBottles} />}
         {tab === "recipes" && <Recipes recipes={state.recipes} setRecipes={setters.setRecipes} />}
         {tab === "make" && <MakeableDrinks recipes={state.recipes} setRecipes={setters.setRecipes} bottles={state.bottles} />}
+        {tab === "slushi" && <SlushiLab slushi={state.slushi || []} setSlushi={setters.setSlushi} bottles={state.bottles} />}
         {tab === "queue" && <Queue queue={state.queue} setQueue={setters.setQueue} />}
-        {tab === "share" && <ShareMenu guestUrl={guestUrl} />}
+        {tab === "share" && <ShareMenu guestUrl={guestUrl} recipes={state.recipes} barName={state.barName} />}
       </div>
     </div>
   );
@@ -2513,6 +3120,7 @@ export default function App() {
   const [bottles, setBottles] = useSharedState("bottles", SEED_BOTTLES);
   const [recipes, setRecipes] = useSharedState("recipes", SEED_RECIPES);
   const [queue, setQueue] = useSharedState("queue", []);
+  const [slushi, setSlushi] = useSharedState("slushi", []);
   const barName = "Trixon";
 
   // Determine view from URL hash (so QR can point to #guest)
@@ -2574,8 +3182,8 @@ export default function App() {
         </div>
       ) : (
         <AdminView
-          state={{ bottles, recipes, queue, barName }}
-          setters={{ setBottles, setRecipes, setQueue }}
+          state={{ bottles, recipes, queue, slushi, barName }}
+          setters={{ setBottles, setRecipes, setQueue, setSlushi }}
           guestUrl={guestUrl}
           onPreviewGuest={() => {
             window.location.hash = "guest";
