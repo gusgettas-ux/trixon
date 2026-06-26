@@ -1085,6 +1085,10 @@ function Recipes({ recipes, setRecipes, tonight, setTonight }) {
     });
   };
 
+  // Quick-toggle featured directly from the card
+  const toggleFeatured = (r) =>
+    setRecipes((rs) => rs.map((x) => (x.id === r.id ? { ...x, featured: !x.featured } : x)));
+
   // Scale an amount string like "1.5 oz" or "¾ oz" by a multiplier
   const scaleAmount = (amount, mult) => {
     if (!amount || mult === 1) return amount;
@@ -1308,7 +1312,7 @@ function Recipes({ recipes, setRecipes, tonight, setTonight }) {
               onChange={(e) => setDraft({ ...draft, featured: e.target.checked })}
               style={{ accentColor: T.gold, width: 16, height: 16 }}
             />
-            ⭐ Feature this on the guest menu (pinned to top)
+            ⭐ Feature this drink (shows in the Featured section)
           </label>
 
           <label
@@ -1623,6 +1627,13 @@ function Recipes({ recipes, setRecipes, tonight, setTonight }) {
                         Edit
                       </GoldButton>
                       <GoldButton
+                        subtle={!r.featured}
+                        onClick={() => toggleFeatured(r)}
+                        style={r.featured ? { borderColor: T.goldBright } : {}}
+                      >
+                        {r.featured ? "★ Featured" : "☆ Feature"}
+                      </GoldButton>
+                      <GoldButton
                         subtle={!inTonight(r.name)}
                         onClick={() => toggleTonight(r)}
                         style={inTonight(r.name) ? { borderColor: T.goldBright } : {}}
@@ -1778,7 +1789,7 @@ function ShareMenu({ guestUrl, recipes = [], tonight, barName = "Trixon" }) {
     if (!tonightReplace) {
       const featured = menu.filter((r) => r.featured);
       const rest = menu.filter((r) => !r.featured);
-      if (featured.length) groups.push(["✨ Featured Tonight", featured]);
+      if (featured.length) groups.push(["✨ Featured", featured]);
       const seen = new Set();
       rest.forEach((r) => {
         const g = r.group || "Cocktails";
@@ -1954,14 +1965,17 @@ function MakeableDrinks({ recipes, setRecipes, bottles, tonight, setTonight }) {
   const [focus, setFocus] = useState(""); // optional theme for guided AI suggestions
 
   // Add an AI suggestion into the saved Recipes list
-  const saveToRecipes = (d) => {
+  // Build a recipe object from an AI suggestion
+  const buildRecipeFromAI = (d, available) => {
     const ingredients = (Array.isArray(d.ingredients) ? d.ingredients : []).map((line) => {
-      // Split a line like "1.5 oz Bourbon" into amount + name (best effort)
+      if (line && typeof line === "object") {
+        return { name: line.name || "", amount: line.amount != null ? String(line.amount) : "" };
+      }
       const m = String(line).match(/^([\d.\/\s]+(?:oz|ml|dash(?:es)?|tsp|tbsp|cup|part(?:s)?|splash|barspoon)?\.?)\s+(.*)$/i);
       if (m) return { amount: m[1].trim(), name: m[2].trim() };
       return { name: String(line).trim(), amount: "" };
     });
-    const newRecipe = {
+    return {
       id: "r" + Date.now() + Math.floor(Math.random() * 1000),
       name: d.name,
       tag: "AI Suggestion",
@@ -1969,11 +1983,14 @@ function MakeableDrinks({ recipes, setRecipes, bottles, tonight, setTonight }) {
       description: d.tagline || "",
       ingredients: ingredients.length ? ingredients : [{ name: "", amount: "" }],
       notes: d.build || "",
-      available: false, // hidden from guest menu until you review/enable it
+      available,
     };
+  };
+
+  const saveToRecipes = (d) => {
     setRecipes((rs) => {
       if (rs.some((r) => r.name.toLowerCase() === d.name.toLowerCase())) return rs; // avoid dupes
-      return [...rs, newRecipe];
+      return [...rs, buildRecipeFromAI(d, false)];
     });
     setSavedNames((s) => (s.includes(d.name) ? s : [...s, d.name]));
   };
@@ -1981,13 +1998,22 @@ function MakeableDrinks({ recipes, setRecipes, bottles, tonight, setTonight }) {
   const alreadyInRecipes = (name) =>
     savedNames.includes(name) || recipes.some((r) => r.name.toLowerCase() === name.toLowerCase());
 
-  // Toggle an AI drink in/out of Tonight's Menu
+  // Toggle an AI drink in/out of Tonight's Menu — also saves it to Recipes so it has ingredients
   const inTonight = (name) => (tonight?.items || []).some((t) => t.name.toLowerCase() === name.toLowerCase());
   const toggleTonight = (d) => {
+    const exists = (tonight?.items || []).some((x) => x.name.toLowerCase() === d.name.toLowerCase());
+    if (!exists) {
+      // Ensure the drink exists in Recipes (with ingredients), available on the menu
+      setRecipes((rs) => {
+        if (rs.some((r) => r.name.toLowerCase() === d.name.toLowerCase())) return rs;
+        return [...rs, buildRecipeFromAI(d, true)];
+      });
+      setSavedNames((s) => (s.includes(d.name) ? s : [...s, d.name]));
+    }
     setTonight((t) => {
       const items = t?.items || [];
-      const exists = items.some((x) => x.name.toLowerCase() === d.name.toLowerCase());
-      const nextItems = exists
+      const has = items.some((x) => x.name.toLowerCase() === d.name.toLowerCase());
+      const nextItems = has
         ? items.filter((x) => x.name.toLowerCase() !== d.name.toLowerCase())
         : [...items, { name: d.name, tag: "Tonight", description: d.tagline || "" }];
       return { ...(t || {}), active: t?.active ?? true, mode: t?.mode || "pin", items: nextItems };
@@ -2927,7 +2953,7 @@ function GuestView({ recipes, bottles = [], tonight, addToQueue, barName }) {
               if (!seen.has(g)) { seen.add(g); order2.push(g); }
             });
             if (featured.length > 0) {
-              sections.push({ key: "__featured", label: "✨ Featured Tonight", items: featured, always: true });
+              sections.push({ key: "__featured", label: "✨ Featured", items: featured, always: true });
             }
             order2.forEach((g) => {
               sections.push({ key: g, label: g, items: rest.filter((r) => (r.group || "More Cocktails") === g) });
