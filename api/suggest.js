@@ -13,22 +13,32 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { inventory, focus } = req.body || {};
+    const { inventory, focus, mode } = req.body || {};
     const list = Array.isArray(inventory) ? inventory.join(", ") : String(inventory || "");
     const focusText = (focus || "").toString().trim();
+    const explore = mode === "explore";
 
     let instruction;
-    if (focusText) {
+    if (explore) {
+      const focusPart = focusText
+        ? `Every suggestion must match this theme: "${focusText}". `
+        : "";
+      instruction = `${focusPart}Suggest 6 popular, trending, or classic cocktails worth trying — these do NOT need to use my current stock. Think of what a great bar would feature right now. For EACH drink, look at my inventory list and determine which ingredients I'm MISSING, and include them in a "missing" array (just the ingredient names I'd need to buy). If I already have everything, use an empty array.`;
+    } else if (focusText) {
       instruction = `The host specifically wants: "${focusText}". This is the MOST IMPORTANT requirement — every single one of the 6 suggestions must directly match this request. If they ask for margaritas, suggest 6 margarita variations. If they ask for summer drinks, every drink must be summery. Do not drift to unrelated cocktails. Use my stock where possible, and you may assume common basics (ice, citrus, sugar, simple syrup, salt). If a key ingredient for the theme is missing, still suggest the themed drink and note it.`;
     } else {
       instruction = `Suggest 6 cocktails I could make. Prioritize variety: mix well-known classics with a couple of creative or lesser-known options that genuinely fit my stock. Only suggest drinks where I plausibly have the main spirits and modifiers.`;
     }
 
+    const format = explore
+      ? `[{"name":"Drink Name","tagline":"short enticing one-line description","ingredients":["1.5 oz X","0.75 oz Y"],"missing":["ingredient I need to buy"],"build":"one short sentence"}]`
+      : `[{"name":"Drink Name","tagline":"short enticing one-line description","ingredients":["1.5 oz X","0.75 oz Y"],"build":"one short sentence"}]`;
+
     const prompt = `I have these items in my home bar: ${list}.
 
 You are an expert bar manager and creative mixologist. ${instruction}
 Respond ONLY with a valid, complete JSON array and nothing else — no preamble, no trailing text. Keep each "build" to one short sentence so the response isn't too long. Format:
-[{"name":"Drink Name","tagline":"short enticing one-line description","ingredients":["1.5 oz X","0.75 oz Y"],"build":"one short sentence"}]`;
+${format}`;
 
     const aiRes = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",

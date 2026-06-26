@@ -1946,7 +1946,7 @@ function haveIngredient(ingredientName, inStock) {
   });
 }
 
-function MakeableDrinks({ recipes, setRecipes, bottles, tonight, setTonight }) {
+function MakeableDrinks({ recipes, setRecipes, bottles, setBottles, tonight, setTonight }) {
   const inStock = bottles.filter((b) => (b.level ?? 0) > 0);
 
   // Evaluate each saved recipe
@@ -1963,6 +1963,8 @@ function MakeableDrinks({ recipes, setRecipes, bottles, tonight, setTonight }) {
   const [aiResults, setAiResults] = useState(null);
   const [savedNames, setSavedNames] = useState([]); // names added to Recipes this session
   const [focus, setFocus] = useState(""); // optional theme for guided AI suggestions
+  const [lastMode, setLastMode] = useState("bar"); // "bar" or "explore"
+  const [shoppingAdded, setShoppingAdded] = useState([]); // ingredient names added to shopping list
 
   // Add an AI suggestion into the saved Recipes list
   // Build a recipe object from an AI suggestion
@@ -2020,17 +2022,22 @@ function MakeableDrinks({ recipes, setRecipes, bottles, tonight, setTonight }) {
     });
   };
 
-  const askAI = async (focus = "") => {
+  const askAI = async (focus = "", mode = "bar") => {
     setAiLoading(true);
     setAiError("");
     setAiResults(null);
-    const inventory = inStock.map((b) => `${b.name}${b.category ? ` (${b.category})` : ""}`);
+    setLastMode(mode);
+    // For explore mode, send everything owned (any level) so AI knows what you already have.
+    const inventory =
+      mode === "explore"
+        ? bottles.map((b) => `${b.name}${b.category ? ` (${b.category})` : ""}`)
+        : inStock.map((b) => `${b.name}${b.category ? ` (${b.category})` : ""}`);
 
     try {
       const res = await fetch("/api/suggest", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ inventory, focus }),
+        body: JSON.stringify({ inventory, focus, mode }),
       });
       if (!res.ok) {
         let msg = `Request failed (status ${res.status}).`;
@@ -2054,6 +2061,27 @@ function MakeableDrinks({ recipes, setRecipes, bottles, tonight, setTonight }) {
     } finally {
       setAiLoading(false);
     }
+  };
+
+  // Add a missing ingredient to inventory flagged for the shopping list
+  const addMissingToShopping = (ingredientName) => {
+    setBottles((bs) => {
+      const exists = bs.find((b) => b.name.toLowerCase() === ingredientName.toLowerCase());
+      if (exists) {
+        return bs.map((b) => (b.id === exists.id ? { ...b, order: true } : b));
+      }
+      return [
+        ...bs,
+        {
+          id: "b" + Date.now() + Math.floor(Math.random() * 1000),
+          name: ingredientName,
+          category: "",
+          level: 0,
+          order: true,
+        },
+      ];
+    });
+    setShoppingAdded((s) => (s.includes(ingredientName) ? s : [...s, ingredientName]));
   };
 
   return (
@@ -2194,12 +2222,17 @@ function MakeableDrinks({ recipes, setRecipes, bottles, tonight, setTonight }) {
           AI Ideas <span style={{ color: T.goldDim }}>· beyond your recipes</span>
         </div>
         <div style={{ fontFamily: "'Cormorant Garamond', serif", fontStyle: "italic", fontSize: 15, color: T.goldDim, marginBottom: 14 }}>
-          Ask AI to suggest cocktails you could make from what's in stock right now.
+          "From My Bar" uses what's in stock. "Explore Popular" suggests trending drinks even if you don't have everything — then you can add what's missing to your shopping list.
         </div>
 
-        <GoldButton onClick={() => askAI("")} style={{ width: "100%", padding: 14 }}>
-          {aiLoading ? "Thinking…" : "✨ Ask AI for Ideas"}
-        </GoldButton>
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+          <GoldButton onClick={() => askAI("", "bar")} style={{ flex: 1, minWidth: 140, padding: 14 }}>
+            {aiLoading ? "Thinking…" : "🍸 From My Bar"}
+          </GoldButton>
+          <GoldButton onClick={() => askAI("", "explore")} style={{ flex: 1, minWidth: 140, padding: 14 }}>
+            {aiLoading ? "Thinking…" : "🌎 Explore Popular"}
+          </GoldButton>
+        </div>
 
         {/* Guided suggestions with a custom focus/theme */}
         <div
@@ -2304,6 +2337,49 @@ function MakeableDrinks({ recipes, setRecipes, bottles, tonight, setTonight }) {
                   {d.build}
                 </div>
               )}
+
+              {/* Missing ingredients (explore mode) */}
+              {lastMode === "explore" && Array.isArray(d.missing) && d.missing.length > 0 && (
+                <div
+                  style={{
+                    marginTop: 12,
+                    padding: "12px 14px",
+                    background: "rgba(192,57,43,0.06)",
+                    borderLeft: `2px solid ${T.dangerBright}`,
+                    borderRadius: 4,
+                  }}
+                >
+                  <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 9, letterSpacing: 1, textTransform: "uppercase", color: T.dangerBright, marginBottom: 8 }}>
+                    You'll need to buy:
+                  </div>
+                  {d.missing.map((ing, k) => {
+                    const added = shoppingAdded.includes(ing);
+                    return (
+                      <div key={k} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "3px 0" }}>
+                        <span style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 15, color: T.cream }}>{ing}</span>
+                        {added ? (
+                          <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 9, letterSpacing: 1, textTransform: "uppercase", color: T.goldDim }}>✓ On List</span>
+                        ) : (
+                          <button
+                            onClick={() => addMissingToShopping(ing)}
+                            style={{ ...miniBtn, whiteSpace: "nowrap", color: T.gold, borderColor: T.goldDeep }}
+                          >
+                            + Shopping List
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                  {d.missing.every((ing) => shoppingAdded.includes(ing)) ? null : (
+                    <div style={{ marginTop: 8 }}>
+                      <GoldButton subtle onClick={() => d.missing.forEach((ing) => addMissingToShopping(ing))}>
+                        + Add All Missing
+                      </GoldButton>
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div style={{ marginTop: 14, display: "flex", gap: 8, flexWrap: "wrap" }}>
                 {alreadyInRecipes(d.name) ? (
                   <div
@@ -3253,7 +3329,7 @@ function AdminView({ state, setters, guestUrl, onPreviewGuest }) {
       <div style={{ maxWidth: 640, margin: "0 auto", padding: "24px" }}>
         {tab === "inventory" && <Inventory bottles={state.bottles} setBottles={setters.setBottles} />}
         {tab === "recipes" && <Recipes recipes={state.recipes} setRecipes={setters.setRecipes} tonight={state.tonight} setTonight={setters.setTonight} />}
-        {tab === "make" && <MakeableDrinks recipes={state.recipes} setRecipes={setters.setRecipes} bottles={state.bottles} tonight={state.tonight} setTonight={setters.setTonight} />}
+        {tab === "make" && <MakeableDrinks recipes={state.recipes} setRecipes={setters.setRecipes} bottles={state.bottles} setBottles={setters.setBottles} tonight={state.tonight} setTonight={setters.setTonight} />}
         {tab === "slushi" && <SlushiLab slushi={state.slushi || []} setSlushi={setters.setSlushi} bottles={state.bottles} />}
         {tab === "queue" && <Queue queue={state.queue} setQueue={setters.setQueue} />}
         {tab === "share" && <ShareMenu guestUrl={guestUrl} recipes={state.recipes} tonight={state.tonight} barName={state.barName} />}
