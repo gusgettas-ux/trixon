@@ -40,7 +40,7 @@ Respond ONLY with a JSON array, no other text:
       },
       body: JSON.stringify({
         model: "claude-sonnet-4-6",
-        max_tokens: 1800,
+        max_tokens: 3000,
         messages: [{ role: "user", content: prompt }],
       }),
     });
@@ -57,17 +57,46 @@ Respond ONLY with a JSON array, no other text:
       .replace(/```json|```/g, "")
       .trim();
 
-    let parsed;
-    try {
-      parsed = JSON.parse(text);
-    } catch {
-      const m = text.match(/\[[\s\S]*\]/);
-      parsed = m ? JSON.parse(m[0]) : [];
-    }
+    const parsed = robustParse(text);
 
     if (mode === "estimate") return res.status(200).json({ estimates: parsed });
     return res.status(200).json({ suggestions: parsed });
   } catch (e) {
     return res.status(500).json({ error: e.message || "Unexpected server error" });
   }
+}
+
+// Parse a JSON array even if it's slightly malformed or truncated.
+function robustParse(text) {
+  // 1) straight parse
+  try { return JSON.parse(text); } catch {}
+  // 2) grab the outermost [ ... ]
+  const start = text.indexOf("[");
+  if (start === -1) return [];
+  let slice = text.slice(start);
+  // 3) try trimming to last complete object and closing the array
+  try { return JSON.parse(slice); } catch {}
+  // remove trailing commas before } or ]
+  let cleaned = slice.replace(/,\s*([}\]])/g, "$1");
+  try { return JSON.parse(cleaned); } catch {}
+  // 4) salvage: collect complete top-level {...} objects
+  const objs = [];
+  let depth = 0, objStart = -1, inStr = false, esc = false;
+  for (let i = 0; i < cleaned.length; i++) {
+    const ch = cleaned[i];
+    if (esc) { esc = false; continue; }
+    if (ch === "\\") { esc = true; continue; }
+    if (ch === '"') inStr = !inStr;
+    if (inStr) continue;
+    if (ch === "{") { if (depth === 0) objStart = i; depth++; }
+    else if (ch === "}") {
+      depth--;
+      if (depth === 0 && objStart !== -1) {
+        const piece = cleaned.slice(objStart, i + 1);
+        try { objs.push(JSON.parse(piece)); } catch {}
+        objStart = -1;
+      }
+    }
+  }
+  return objs;
 }

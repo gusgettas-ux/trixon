@@ -13,15 +13,22 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { inventory } = req.body || {};
+    const { inventory, focus } = req.body || {};
     const list = Array.isArray(inventory) ? inventory.join(", ") : String(inventory || "");
+    const focusText = (focus || "").toString().trim();
+
+    let instruction;
+    if (focusText) {
+      instruction = `The host specifically wants: "${focusText}". This is the MOST IMPORTANT requirement — every single one of the 6 suggestions must directly match this request. If they ask for margaritas, suggest 6 margarita variations. If they ask for summer drinks, every drink must be summery. Do not drift to unrelated cocktails. Use my stock where possible, and you may assume common basics (ice, citrus, sugar, simple syrup, salt). If a key ingredient for the theme is missing, still suggest the themed drink and note it.`;
+    } else {
+      instruction = `Suggest 6 cocktails I could make. Prioritize variety: mix well-known classics with a couple of creative or lesser-known options that genuinely fit my stock. Only suggest drinks where I plausibly have the main spirits and modifiers.`;
+    }
 
     const prompt = `I have these items in my home bar: ${list}.
 
-Suggest 6 cocktails I could make with these (and common basics like ice, citrus, sugar, water).
-Only suggest drinks where I plausibly have the main spirits/mixers.
-Respond ONLY with a JSON array, no other text, in this exact format:
-[{"name":"Drink Name","tagline":"short enticing one-line description","ingredients":["1.5 oz X","0.75 oz Y"],"build":"one or two sentences on how to make it"}]`;
+You are an expert bar manager and creative mixologist. ${instruction}
+Respond ONLY with a valid, complete JSON array and nothing else — no preamble, no trailing text. Keep each "build" to one short sentence so the response isn't too long. Format:
+[{"name":"Drink Name","tagline":"short enticing one-line description","ingredients":["1.5 oz X","0.75 oz Y"],"build":"one short sentence"}]`;
 
     const aiRes = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -32,7 +39,7 @@ Respond ONLY with a JSON array, no other text, in this exact format:
       },
       body: JSON.stringify({
         model: "claude-sonnet-4-6",
-        max_tokens: 1500,
+        max_tokens: 2500,
         messages: [{ role: "user", content: prompt }],
       }),
     });
@@ -49,16 +56,39 @@ Respond ONLY with a JSON array, no other text, in this exact format:
       .replace(/```json|```/g, "")
       .trim();
 
-    let suggestions;
-    try {
-      suggestions = JSON.parse(text);
-    } catch {
-      const m = text.match(/\[[\s\S]*\]/);
-      suggestions = m ? JSON.parse(m[0]) : [];
-    }
+    const suggestions = robustParse(text);
 
     return res.status(200).json({ suggestions });
   } catch (e) {
     return res.status(500).json({ error: e.message || "Unexpected server error" });
   }
+}
+
+// Parse a JSON array even if slightly malformed or truncated.
+function robustParse(text) {
+  try { return JSON.parse(text); } catch {}
+  const start = text.indexOf("[");
+  if (start === -1) return [];
+  let slice = text.slice(start);
+  try { return JSON.parse(slice); } catch {}
+  let cleaned = slice.replace(/,\s*([}\]])/g, "$1");
+  try { return JSON.parse(cleaned); } catch {}
+  const objs = [];
+  let depth = 0, objStart = -1, inStr = false, esc = false;
+  for (let i = 0; i < cleaned.length; i++) {
+    const ch = cleaned[i];
+    if (esc) { esc = false; continue; }
+    if (ch === "\\") { esc = true; continue; }
+    if (ch === '"') inStr = !inStr;
+    if (inStr) continue;
+    if (ch === "{") { if (depth === 0) objStart = i; depth++; }
+    else if (ch === "}") {
+      depth--;
+      if (depth === 0 && objStart !== -1) {
+        try { objs.push(JSON.parse(cleaned.slice(objStart, i + 1))); } catch {}
+        objStart = -1;
+      }
+    }
+  }
+  return objs;
 }
